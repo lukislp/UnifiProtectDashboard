@@ -1,0 +1,14 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "UnifiCameraDashboard": "Debug"
+    }
+  },
+  "AllowedHosts": "*",
+  "ServerSettings": {
+    "HttpPort": 5008,
+    "HttpsPort": 5009
+  }
+}

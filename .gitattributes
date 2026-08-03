@@ -1,0 +1,60 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.cs text diff=csharp
+*.razor text
+*.js text
+*.ts text
+*.json text
+*.xml text
+*.html text
+*.css text
+*.scss text
+
+# Documentation
+*.md text
+*.txt text
+
+# Scripts
+*.ps1 text eol=crlf
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Binary files
+*.dll binary
+*.exe binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.mp4 binary
+*.zip binary
+*.7z binary
+
+# Database files
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# HLS segments (if accidentally committed)
+*.ts binary
+*.m3u8 text
+
+# Archives
+*.tar binary
+*.gz binary
+
+# Font files
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Linguist overrides (for GitHub language stats)
+*.md linguist-documentation
+*.json linguist-generated=false
+wwwroot/lib/** linguist-vendored
+Tools/ffmpeg/** linguist-vendored

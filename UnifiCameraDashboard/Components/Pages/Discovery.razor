@@ -1,0 +1,313 @@
+@page "/discovery"
+@rendermode InteractiveServer
+@inherits LocalizedSetupCheckBase
+@using UnifiCameraDashboard.Models
+@using UnifiCameraDashboard.Services
+@inject IUnifiCameraService CameraService
+@inject ICameraRepository CameraRepository
+
+<PageTitle>@I18n.Get("DiscoveryTitle")</PageTitle>
+
+<div class="discovery-page">
+    <div class="discovery-header">
+    <h2>
+ <i class="bi bi-search"></i>
+     @I18n.Get("DiscoveryTitle")
+     </h2>
+   <p class="text-muted">
+@I18n.Get("DiscoverySubtitle")
+   </p>
+   </div>
+
+    <div class="row">
+   <div class="col-lg-12">
+     <!-- Discovery Control -->
+   <div class="card mb-4">
+        <div class="card-header">
+ <h5>
+   <i class="bi bi-play-circle"></i>
+            @I18n.Get("DiscoveryControlTitle")
+ </h5>
+    </div>
+        <div class="card-body">
+   <div class="alert alert-info">
+   <i class="bi bi-info-circle"></i>
+     <strong>Info:</strong> @I18n.Get("DiscoveryInfoText")
+   </div>
+
+        @if (_isDiscovering)
+       {
+          <div class="text-center">
+    <div class="spinner-border text-primary mb-3" role="status">
+ <span class="visibly-hidden">@I18n.Get("DiscoverySearching")</span>
+   </div>
+  <p>@I18n.Get("DiscoverySearching")</p>
+ </div>
+   }
+   else
+       {
+<button class="btn btn-primary btn-lg" @onclick="StartDiscovery">
+   <i class="bi bi-search"></i>
+@I18n.Get("DiscoveryRefreshButton")
+    </button>
+  }
+
+    @if (!string.IsNullOrEmpty(_statusMessage))
+          {
+   <div class="alert alert-@_statusClass mt-3">
+@_statusMessage
+   </div>
+  }
+   </div>
+   </div>
+
+    <!-- Discovered Cameras -->
+       @if (_discoveredCameras.Any())
+     {
+  <div class="card">
+        <div class="card-header">
+      <h5>
+        <i class="bi bi-camera-video"></i>
+@I18n.Format("DiscoveredCameras", _discoveredCameras.Count)
+        @if (_newCameras.Any())
+        {
+            <span class="badge bg-success ms-2">@_newCameras.Count @I18n.Get("DiscoveryNew")</span>
+        }
+        @if (_existingCameraIds.Any())
+        {
+            <span class="badge bg-secondary ms-2">@_existingCameraIds.Count @I18n.Get("DiscoveryAlreadyPresent")</span>
+        }
+     </h5>
+   </div>
+     <div class="card-body">
+ <div class="table-responsive">
+     <table class="table table-hover">
+     <thead>
+  <tr>
+     <th>@I18n.Get("DiscoveryStatus")</th>
+     <th>@I18n.Get("DiscoveryName")</th>
+  <th>@I18n.Get("DiscoveryModel")</th>
+    <th>@I18n.Get("DiscoveryMac")</th>
+ <th>@I18n.Get("DiscoveryResolution")</th>
+       <th>@I18n.Get("DiscoveryPreview")</th>
+       <th>@I18n.Get("DiscoveryInDb")</th>
+         </tr>
+   </thead>
+    <tbody>
+      @foreach (var camera in _discoveredCameras)
+ {
+        var isExisting = _existingCameraIds.Contains(camera.Id);
+   <tr class="@(isExisting ? "table-secondary opacity-75" : "")">
+     <td>
+     <span class="badge bg-@(camera.IsOnline ? "success" : "danger")">
+    @(camera.IsOnline ? I18n.Get("Online") : I18n.Get("Offline"))
+    </span>
+ </td>
+<td><strong>@camera.Name</strong></td>
+       <td>@camera.Model</td>
+   <td><small class="text-muted">@camera.MacAddress</small></td>
+  <td>@camera.Width x @camera.Height</td>
+    <td>
+        <img src="/api/snapshot/@camera.Id?w=200&h=120" 
+          alt="@camera.Name" 
+       style="max-width: 200px; max-height: 120px; border-radius: 4px;"
+              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22120%22%3E%3Crect fill=%22%23333%22 width=%22200%22 height=%22120%22/%3E%3Ctext fill=%22%23fff%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo preview%3C/text%3E%3C/svg%3E'" />
+            </td>
+        <td>
+            @if (isExisting)
+            {
+                <span class="badge bg-secondary"><i class="bi bi-check-circle"></i> @I18n.Get("DiscoveryYes")</span>
+            }
+            else
+            {
+                <span class="badge bg-success"><i class="bi bi-plus-circle"></i> @I18n.Get("DiscoveryNo")</span>
+            }
+        </td>
+ </tr>
+   }
+      </tbody>
+       </table>
+   </div>
+
+  <div class="mt-3">
+    @if (_newCameras.Any())
+    {
+        <button class="btn btn-success btn-lg" @onclick="SaveDiscoveredCameras" disabled="@_isSaving">
+              @if (_isSaving)
+      {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+         }
+           <i class="bi bi-check-circle"></i>
+            @(_isSaving ? "Saving..." : I18n.Format("DiscoverySaveButton", _newCameras.Count))
+        </button>
+    }
+    else
+    {
+                 <div class="alert alert-info d-inline-block">
+                     <i class="bi bi-info-circle"></i> @I18n.Get("DiscoveryNoNewCameras")
+                 </div>
+             }
+          <a href="/" class="btn btn-secondary btn-lg ms-2">
+            <i class="bi bi-house"></i>
+           @I18n.Get("DiscoveryBackButton")
+        </a>
+  </div>
+   </div>
+   </div>
+    }
+     </div>
+    </div>
+</div>
+
+<style>
+    .discovery-page {
+ padding: 2rem;
+max-width: 1400px;
+  margin: 0 auto;
+    }
+
+    .discovery-header {
+        margin-bottom: 2rem;
+    }
+
+    .discovery-header h2 {
+        color: var(--text-primary, #fff);
+ margin-bottom: 0.5rem;
+    }
+
+  .card {
+background: var(--tile-bg, #1e2336);
+ border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary, #fff);
+    }
+
+.card-header {
+  background: rgba(0, 0, 0, 0.2);
+ border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .table {
+  color: var(--text-primary, #fff);
+    }
+
+    .table-hover tbody tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    code {
+   background: rgba(0, 0, 0, 0.3);
+ padding: 0.25rem 0.5rem;
+   border-radius: 4px;
+    color: #10b981;
+    }
+</style>
+
+@code {
+    private List<UnifiCamera> _discoveredCameras = new();
+    private HashSet<string> _existingCameraIds = new();
+    private List<UnifiCamera> _newCameras = new();
+    private bool _isDiscovering = false;
+    private bool _isSaving = false;
+    private string _statusMessage = "";
+    private string _statusClass = "info";
+
+  private async Task StartDiscovery()
+    {
+  try
+        {
+   _isDiscovering = true;
+  _statusMessage = "";
+   StateHasChanged();
+
+        _discoveredCameras = await CameraService.DiscoverCamerasAsync();
+
+        // Deduplicate discovered cameras by ID (keep first occurrence)
+        _discoveredCameras = _discoveredCameras
+            .GroupBy(c => c.Id)
+            .Select(g => g.First())
+            .ToList();
+
+        // Load existing camera IDs from DB
+        var existingCameras = await CameraRepository.GetAllCamerasAsync();
+        _existingCameraIds = existingCameras.Select(c => c.Id).ToHashSet();
+
+        // Compute truly new cameras
+        _newCameras = _discoveredCameras
+            .Where(c => !_existingCameraIds.Contains(c.Id))
+            .ToList();
+
+if (_discoveredCameras.Any())
+   {
+       _statusMessage = I18n.Format("DiscoveryCamerasFoundMsg", _discoveredCameras.Count, _newCameras.Count, _existingCameraIds.Count(id => _discoveredCameras.Any(c => c.Id == id)));
+_statusClass = "success";
+  }
+       else
+{
+      _statusMessage = I18n.Get("DiscoveryNoCameras");
+       _statusClass = "warning";
+         }
+  }
+catch (Exception ex)
+     {
+   _statusMessage = $"Error: {ex.Message}";
+    _statusClass = "danger";
+}
+   finally
+ {
+ _isDiscovering = false;
+       StateHasChanged();
+      }
+    }
+
+    private async Task SaveDiscoveredCameras()
+    {
+        try
+        {
+    _isSaving = true;
+   _statusMessage = "";
+       StateHasChanged();
+
+        if (!_newCameras.Any())
+        {
+            _statusMessage = I18n.Get("DiscoveryNoNewCameras");
+            _statusClass = "info";
+            return;
+        }
+
+  var success = await CameraService.SaveDiscoveredCamerasAsync(_newCameras);
+
+if (success)
+  {
+       _statusMessage = I18n.Format("DiscoverySavedMsg", _newCameras.Count);
+    _statusClass = "success";
+
+        // Update local state so saved cameras now show as "existing"
+        foreach (var c in _newCameras) _existingCameraIds.Add(c.Id);
+        _newCameras.Clear();
+
+    StateHasChanged();
+
+           // Wait briefly so user sees the message
+    await Task.Delay(1500);
+
+      // Navigate to dashboard
+  Navigation.NavigateTo("/", forceLoad: true);
+       }
+        else
+    {
+             _statusMessage = I18n.Get("DiscoverySaveError");
+       _statusClass = "danger";
+}
+  }
+catch (Exception ex)
+        {
+   _statusMessage = $"Error saving: {ex.Message}";
+  _statusClass = "danger";
+      }
+    finally
+    {
+      _isSaving = false;
+   StateHasChanged();
+      }
+    }
+}

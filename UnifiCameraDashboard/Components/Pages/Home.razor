@@ -1,0 +1,789 @@
+@page "/"
+@rendermode InteractiveServer
+@inherits LocalizedSetupCheckBase
+@using UnifiCameraDashboard.Models
+@using UnifiCameraDashboard.Services
+@inject IUnifiCameraService CameraService
+@inject IJSRuntime JS
+
+<PageTitle>Unifi Camera Dashboard</PageTitle>
+
+<HeadContent>
+    <!-- HLS.js (pinned version - avoid an unpinned CDN tag for reproducible, tamper-evident builds) -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js"></script>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+</HeadContent>
+
+<div class="camera-dashboard">
+    <div class="dashboard-header">
+  <h1>
+        <i class="bi bi-camera-video"></i>
+   Unifi Camera Dashboard
+        </h1>
+    <div class="header-controls">
+ <span class="status-badge @(_isConnected ? "online" : "offline")">
+             <i class="bi bi-@(_isConnected ? "wifi" : "wifi-off")"></i>
+    @(_isConnected ? I18n.Get("Connected") : I18n.Get("Disconnected"))
+        </span>
+ 
+       <!-- Stream mode toggle -->
+   <div class="btn-group" role="group">
+           <input type="radio" class="btn-check" name="streamMode" id="streamSnapshot" 
+         checked="@(_streamMode == StreamMode.Snapshot)" 
+            @onchange="() => ToggleStreamMode(StreamMode.Snapshot)">
+   <label class="btn btn-outline-light btn-sm" for="streamSnapshot">
+    <i class="bi bi-image"></i> @I18n.Get("Snapshot")
+        </label>
+
+         <input type="radio" class="btn-check" name="streamMode" id="streamHls" 
+           checked="@(_streamMode == StreamMode.Hls)" 
+  @onchange="() => ToggleStreamMode(StreamMode.Hls)">
+            <label class="btn btn-outline-light btn-sm" for="streamHls">
+      <i class="bi bi-play-circle"></i> @I18n.Get("HlsLive")
+         </label>
+            </div>
+
+       <button class="btn btn-sm btn-outline-light" @onclick="RefreshCameras" disabled="@_isLoading">
+     <i class="bi bi-arrow-clockwise @(_isLoading ? "spinning" : "")"></i>
+           @I18n.Get("Refresh")
+            </button>
+            
+    @if (_streamMode == StreamMode.Snapshot)
+  {
+       <button class="btn btn-sm btn-outline-light" @onclick="ToggleAutoRefresh">
+         <i class="bi bi-@(_autoRefresh ? "pause" : "play")-circle"></i>
+          @(_autoRefresh ? I18n.Get("AutoOn") : I18n.Get("AutoOff"))
+        </button>
+      }
+    
+        <a href="/discovery" class="btn btn-sm btn-outline-light">
+       <i class="bi bi-search"></i>
+  @I18n.Get("Discovery")
+           </a>
+     <button class="btn btn-sm btn-outline-light" @onclick="ToggleFullscreen">
+               <i class="bi bi-fullscreen"></i>
+               @I18n.Get("Fullscreen")
+          </button>
+      </div>
+    </div>
+
+    @if (_isLoading && !_cameras.Any())
+    {
+  <div class="loading-spinner">
+  <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">@I18n.Get("LoadingCameras")</span>
+  </div>
+            <p>@I18n.Get("LoadingCameras")</p>
+ </div>
+    }
+    else if (!_cameras.Any())
+    {
+        <div class="empty-state">
+ <i class="bi bi-camera-video-off"></i>
+ <h3>@I18n.Get("NoCamerasTitle")</h3>
+            <p>@I18n.Get("NoCamerasDesc")</p>
+       <p class="mt-3">
+          <a href="/discovery" class="btn btn-primary btn-lg">
+<i class="bi bi-search"></i>
+           @I18n.Get("SearchCameras")
+        </a>
+          </p>
+        </div>
+    }
+    else
+    {
+        <div class="camera-grid" style="grid-template-columns: repeat(@_gridColumns, 1fr);">
+            @foreach (var camera in _cameras)
+    {
+  <div class="camera-tile @(camera.IsOnline ? "online" : "offline")" @key="camera.Id">
+    <div class="camera-header">
+      <h5>@camera.Name</h5>
+     <span class="badge bg-@(camera.IsOnline ? "success" : "danger")">
+           @(camera.IsOnline ? GetStreamModeBadge() : I18n.Get("Offline"))
+       </span>
+ </div>
+  <div class="camera-stream">
+   @if (_streamMode == StreamMode.Hls)
+    {
+      <!-- HLS Video Stream (Home Assistant quality) -->
+  <video id="video-@camera.Id" 
+         class="camera-preview hls-stream"
+    controls 
+      autoplay 
+      muted
+        @onclick="@(() => ShowCameraFullscreen($"video-{camera.Id}"))"
+    poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23000%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23fff%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ELoading stream...%3C/text%3E%3C/svg%3E"></video>
+ }
+           else
+ {
+  <!-- Snapshot mode -->
+      <img id="camera-@camera.Id" 
+  src="@GetSnapshotUrl(camera.Id)" 
+     alt="@camera.Name"
+        class="camera-preview"
+@onclick="@(() => ShowCameraFullscreen($"camera-{camera.Id}"))"
+             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23333%22 width=%22100%22 height=%22100%22/%3E%3Ctext fill=%22%23fff%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo preview%3C/text%3E%3C/svg%3E'" />
+          }
+     <div class="stream-overlay">
+   <button class="btn btn-sm btn-light" 
+    @onclick="@(() => ShowCameraFullscreen(GetFullscreenElementId(camera.Id)))">
+  <i class="bi bi-arrows-fullscreen"></i>
+           </button>
+     </div>
+      </div>
+              <div class="camera-footer">
+    <small class="text-muted">@camera.Model</small>
+       <small class="text-muted">@camera.Width x @camera.Height</small>
+                </div>
+        </div>
+      }
+    </div>
+    }
+
+    <div class="dashboard-footer">
+        <small class="text-muted">
+        Last updated: @_lastUpdate.ToString("HH:mm:ss")
+     | Cameras: @_cameras.Count
+     | Mode: @GetStreamModeDescription()
+            @if (_streamMode == StreamMode.Snapshot && _autoRefresh)
+    {
+           <text> | Next refresh in: @_nextRefreshIn seconds</text>
+      }
+        </small>
+    </div>
+</div>
+
+<script>
+// HLS Player Management
+window.hlsPlayers = window.hlsPlayers || {};
+
+// Checks if an HLS player is active (no eval)
+window.isHlsPlayerActive = function(cameraId) {
+    return !!(window.hlsPlayers && window.hlsPlayers[cameraId]);
+};
+
+// API helper
+window.callApi = async function(url, options = {}) {
+    try {
+        const response = await fetch(url, {
+        ...options,
+          headers: {
+        'Content-Type': 'application/json',
+      ...options.headers
+    }
+        });
+        
+  if (!response.ok) {
+     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    } catch(error) {
+        console.error('[API] Error:', error);
+        throw error;
+    }
+};
+
+// Start HLS stream via API
+window.startHlsStream = async function(cameraId, channel = 1) {
+    try {
+        console.log('[HLS] Starting stream for camera:', cameraId);
+        
+  const response = await window.callApi(`/api/hls/start/${cameraId}?channel=${channel}`);
+        
+        if (response.success && response.playlistUrl) {
+            console.log('[HLS] Stream started, playlist:', response.playlistUrl);
+     return response.playlistUrl;
+        } else {
+console.error('[HLS] Stream start failed:', response);
+     return null;
+        }
+    } catch(error) {
+   console.error('[HLS] Error starting stream:', error);
+    return null;
+    }
+};
+
+// Stop all HLS streams via API
+window.stopAllHlsStreams = async function() {
+    try {
+  console.log('[HLS] Stopping all streams...');
+        
+        // Stop browser players
+        window.stopAllHlsPlayers();
+
+        // Stop server-side FFmpeg processes
+  await window.callApi('/api/hls/stop-all', { method: 'POST' });
+        
+        console.log('[HLS] All streams stopped');
+    } catch(error) {
+        console.error('[HLS] Error stopping:', error);
+    }
+};
+
+// Initialize HLS player
+window.initializeHlsPlayer = function(cameraId, playlistUrl) {
+    console.log('[HLS] Initializing player for camera:', cameraId, 'URL:', playlistUrl);
+    
+const video = document.getElementById('video-' + cameraId);
+    if (!video) {
+    console.error('[HLS] Video element not found:', 'video-' + cameraId);
+        return false;
+    }
+
+    // Cleanup old player
+    if (window.hlsPlayers[cameraId]) {
+        try {
+            window.hlsPlayers[cameraId].destroy();
+        } catch(e) { console.warn('[HLS] Cleanup error:', e); }
+    }
+
+ if (window.Hls && window.Hls.isSupported()) {
+        const hls = new window.Hls({
+            debug: false,
+            enableWorker: true,
+            lowLatencyMode: false,
+
+            // Reduced buffer sizes - prevents 1+ GB RAM per tab
+            maxBufferLength: 8,           // buffer 8s ahead (was 20)
+            maxMaxBufferLength: 16,       // absolute maximum (was 40)
+            maxBufferSize: 8 * 1000 * 1000, // 8 MB per camera (was 30 MB)
+            backBufferLength: 0,          // no back buffer (was 30s!)
+            maxBufferHole: 0.5,
+            highBufferWatchdogPeriod: 3,
+            nudgeOffset: 0.1,
+            nudgeMaxRetry: 3,
+
+            // Timeouts
+ manifestLoadingTimeOut: 10000,
+ manifestLoadingMaxRetry: 4,
+       manifestLoadingRetryDelay: 1000,
+          levelLoadingTimeOut: 10000,
+        levelLoadingMaxRetry: 4,
+  fragLoadingTimeOut: 20000,
+   fragLoadingMaxRetry: 6,
+
+            // Live Streaming
+  liveSyncDurationCount: 3,
+   liveMaxLatencyDurationCount: 10,
+            
+ // Quality optimization (full quality in grid)
+        capLevelToPlayerSize: false,
+ 
+            // Fire HD 8 performance
+   // Automatic cleanup of old segments
+        maxFragLookUpTolerance: 0.2,
+      // Worker for better multi-threading
+         enableWorker: true,
+    // Less aggressive fragment preloading
+      maxStarvationDelay: 4,
+       maxLoadingDelay: 4
+        });
+
+      hls.loadSource(playlistUrl);
+        hls.attachMedia(video);
+
+        hls.on(window.Hls.Events.MANIFEST_PARSED, function() {
+            console.log('[HLS] Manifest loaded, starting playback:', cameraId);
+    video.play().catch(e => {
+         console.warn('[HLS] Autoplay blocked:', e);
+            });
+        });
+
+        hls.on(window.Hls.Events.ERROR, function(event, data) {
+            console.error('[HLS] Error:', cameraId, data);
+     
+// Buffer stalls ignored (non-fatal)
+        if (data.details === 'bufferStalledError') {
+     console.warn('[HLS] Buffer stall (ignored):', cameraId);
+  return;
+     }
+  
+            if (data.fatal) {
+                switch(data.type) {
+      case window.Hls.ErrorTypes.NETWORK_ERROR:
+  console.error('[HLS] Fatal network error, attempting recovery...');
+ hls.startLoad();
+                break;
+          case window.Hls.ErrorTypes.MEDIA_ERROR:
+             console.error('[HLS] Fatal media error, attempting recovery...');
+hls.recoverMediaError();
+           break;
+        default:
+    console.error('[HLS] Fatal error, attempting restart in 5s...');
+            hls.destroy();
+          
+                // Auto-restart after 5 seconds
+        setTimeout(async () => {
+         console.log('[HLS] Attempting stream restart for:', cameraId);
+                 try {
+const newUrl = await window.startHlsStream(cameraId, 1);
+           if (newUrl) {
+           window.initializeHlsPlayer(cameraId, newUrl);
+      }
+           } catch(e) {
+    console.error('[HLS] Restart failed:', e);
+         }
+      }, 5000);
+break;
+   }
+        }
+        });
+
+        window.hlsPlayers[cameraId] = hls;
+        return true;
+    }
+    else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+  // Native HLS support (Safari)
+        video.src = playlistUrl;
+      video.addEventListener('loadedmetadata', function() {
+      video.play();
+        });
+        return true;
+    }
+    else {
+        console.error('[HLS] HLS not supported in this browser');
+      return false;
+    }
+};
+
+// Stop HLS player
+window.stopHlsPlayer = function(cameraId) {
+    if (window.hlsPlayers[cameraId]) {
+        try {
+            window.hlsPlayers[cameraId].destroy();
+            delete window.hlsPlayers[cameraId];
+        console.log('[HLS] Player stopped:', cameraId);
+        } catch(e) {
+            console.error('[HLS] Error stopping:', e);
+}
+    }
+};
+
+// Stop all players
+window.stopAllHlsPlayers = function() {
+    Object.keys(window.hlsPlayers).forEach(cameraId => {
+        window.stopHlsPlayer(cameraId);
+    });
+    console.log('[HLS] All players stopped');
+};
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    window.stopAllHlsPlayers();
+});
+</script>
+
+<style>
+    @@keyframes spin {
+from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .spinning {
+        animation: spin 1s linear infinite;
+  display: inline-block;
+    }
+
+    .hls-stream {
+    width: 100%;
+        height: 100%;
+        object-fit: cover;
+      background: #000;
+        /* Hardware acceleration for better performance */
+     transform: translateZ(0);
+   -webkit-transform: translateZ(0);
+        will-change: transform;
+   /* Anti-aliasing for sharper image */
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+
+    .btn-group {
+   display: inline-flex;
+     margin-right: 0.5rem;
+    }
+
+    .btn-check {
+ position: absolute;
+        clip: rect(0, 0, 0, 0);
+        pointer-events: none;
+    }
+
+    .btn-check:checked + label {
+        background-color: rgba(16, 185, 129, 0.2);
+        border-color: var(--status-online, #10b981);
+        color: var(--status-online, #10b981);
+    }
+
+    /* Fire HD 8 Tablet optimization (1280x800) */
+    @@media (max-width: 1280px) and (max-height: 800px) {
+        .camera-grid {
+            gap: 0.5rem !important;
+       padding: 0.5rem !important;
+        }
+
+   .camera-tile {
+       /* Larger tiles for better visibility */
+       min-height: 280px !important;
+    }
+
+        .camera-preview {
+            /* Sharper rendering */
+        image-rendering: -webkit-optimize-contrast;
+        }
+
+        .dashboard-header h1 {
+       font-size: 1.5rem !important;
+        }
+
+        .header-controls {
+     flex-wrap: wrap !important;
+            gap: 0.25rem !important;
+    }
+
+        .btn-sm {
+font-size: 0.75rem !important;
+       padding: 0.25rem 0.5rem !important;
+    }
+    }
+
+    /* Landscape mode (Fire HD 8 horizontal) */
+    @@media (orientation: landscape) and (max-width: 1280px) {
+        .camera-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+        }
+
+        .camera-tile {
+            min-height: 220px !important;
+        }
+    }
+
+    /* Portrait mode (Fire HD 8 vertical) */
+    @@media (orientation: portrait) and (max-width: 800px) {
+     .camera-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+   .camera-tile {
+    min-height: 200px !important;
+        }
+    }
+
+    /* Video quality enhancement */
+    video {
+        /* Better quality when scaling */
+    -webkit-filter: contrast(1.05) brightness(1.02);
+      filter: contrast(1.05) brightness(1.02);
+    }
+</style>
+
+@code {
+    private enum StreamMode { Snapshot, Hls }
+    
+    private List<UnifiCamera> _cameras = new();
+    private bool _isLoading = true;
+    private bool _isConnected = false;
+ private bool _autoRefresh = true;
+    private StreamMode _streamMode = StreamMode.Snapshot;
+    private DateTime _lastUpdate = DateTime.Now;
+    private int _gridColumns = 2;
+    private int _refreshIntervalSeconds = 5;
+  private int _nextRefreshIn = 5;
+    private System.Threading.Timer? _refreshTimer;
+    private System.Threading.Timer? _countdownTimer;
+    private Dictionary<string, bool> _hlsStreamsStarted = new();
+    private System.Threading.Timer? _streamWatchdog;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        _refreshIntervalSeconds = await SettingsService.GetRefreshIntervalAsync();
+        if (_refreshIntervalSeconds < 1) _refreshIntervalSeconds = 1;
+        _nextRefreshIn = _refreshIntervalSeconds;
+
+        await LoadCameras();
+        StartAutoRefresh();
+        await InitializeWakeLock();
+        StartStreamWatchdog();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+     await JS.InvokeVoidAsync("setupKeepAlive");
+            
+    // Start HLS streams if HLS mode is active
+    if (_streamMode == StreamMode.Hls)
+            {
+await StartHlsStreamsForAllCameras();
+   }
+      }
+    }
+
+    private async Task StartHlsStreamsForAllCameras()
+    {
+        if (_streamMode != StreamMode.Hls || !_cameras.Any())
+   {
+            return;
+        }
+
+        // No delay needed - video elements are already rendered after OnAfterRenderAsync
+        // await Task.Delay(500); // <- REMOVE!
+
+        foreach (var camera in _cameras.Where(c => c.IsOnline))
+  {
+    if (!_hlsStreamsStarted.ContainsKey(camera.Id))
+         {
+  await StartHlsStream(camera.Id);
+      _hlsStreamsStarted[camera.Id] = true;
+      }
+        }
+    }
+
+    private async Task StartHlsStream(string cameraId)
+    {
+        try
+        {
+          // Use JavaScript API helper for stream start
+    var playlistUrl = await JS.InvokeAsync<string>("startHlsStream", cameraId, 1);
+
+            if (!string.IsNullOrEmpty(playlistUrl))
+         {
+          // Initialize HLS player in browser
+         await JS.InvokeVoidAsync("initializeHlsPlayer", cameraId, playlistUrl);
+       Console.WriteLine($"HLS stream started for camera: {cameraId}");
+            }
+  else
+            {
+    Console.WriteLine($"HLS stream could not be started for camera: {cameraId}");
+ }
+        }
+        catch (Exception ex)
+        {
+         Console.WriteLine($"Error starting HLS stream for {cameraId}: {ex.Message}");
+        }
+    }
+
+    private async Task StopAllHlsStreams()
+    {
+      try
+      {
+// Use JavaScript API helper to stop
+    await JS.InvokeVoidAsync("stopAllHlsStreams");
+
+            _hlsStreamsStarted.Clear();
+   Console.WriteLine("All HLS streams stopped");
+        }
+     catch (Exception ex)
+   {
+            Console.WriteLine($"Error stopping HLS streams: {ex.Message}");
+     }
+    }
+
+    private async Task LoadCameras()
+  {
+        try
+        {
+            _isLoading = true;
+      _cameras = await CameraService.GetCamerasAsync();
+      _isConnected = await CameraService.TestConnectionAsync();
+        _lastUpdate = DateTime.Now;
+         
+     // Grid columns optimized for Fire HD 8 (1280x800)
+            _gridColumns = _cameras.Count switch
+            {
+        1 => 1,
+      2 => 2,
+                   3 => 3,  // 3 cameras -> 3 columns (Fire HD 8 landscape)
+               4 => 2,  // 2x2 grid
+               5 => 3,  // 3 columns (5 cameras)
+           6 => 3,  // 3 columns (6 cameras = 2x3)
+            7 => 3,
+      8 => 3,
+       9 => 3,  // 3x3 grid
+       _ => 3   // default: 3 columns for Fire HD 8
+  };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading cameras: {ex.Message}");
+        }
+        finally
+   {
+        _isLoading = false;
+        }
+    }
+
+    private async Task RefreshCameras()
+    {
+        _nextRefreshIn = _refreshIntervalSeconds;
+        await LoadCameras();
+        StateHasChanged();
+    }
+
+    private async Task ToggleStreamMode(StreamMode mode)
+    {
+        // Stop old HLS streams when mode is switched
+     if (_streamMode == StreamMode.Hls && mode != StreamMode.Hls)
+        {
+      await StopAllHlsStreams();
+        }
+
+      _streamMode = mode;
+  
+if (_streamMode == StreamMode.Hls)
+    {
+   // HLS Live: disable auto-refresh
+      _autoRefresh = false;
+    _refreshTimer?.Dispose();
+      _countdownTimer?.Dispose();
+         
+     // Start HLS streams after mode switch
+        StateHasChanged(); // Update UI first
+ await StartHlsStreamsForAllCameras(); // Then start streams
+  }
+        else
+        {
+   // Snapshot mode: enable auto-refresh
+     _autoRefresh = true;
+StartAutoRefresh();
+        StateHasChanged();
+        }
+    }
+
+    private void ToggleAutoRefresh()
+    {
+   _autoRefresh = !_autoRefresh;
+      if (_autoRefresh) StartAutoRefresh();
+        else
+        {
+     _refreshTimer?.Dispose();
+            _countdownTimer?.Dispose();
+        }
+StateHasChanged();
+    }
+
+    private void StartAutoRefresh()
+    {
+        if (_autoRefresh && _streamMode == StreamMode.Snapshot)
+        {
+            _refreshTimer?.Dispose();
+            _countdownTimer?.Dispose();
+            _nextRefreshIn = _refreshIntervalSeconds;
+
+            // Refresh Timer
+            _refreshTimer = new System.Threading.Timer(async _ =>
+            {
+                await InvokeAsync(RefreshCameras);
+            }, null, TimeSpan.FromSeconds(_refreshIntervalSeconds), TimeSpan.FromSeconds(_refreshIntervalSeconds));
+
+            // Update countdown only every 5s - not every second
+            _countdownTimer = new System.Threading.Timer(_ =>
+            {
+                _nextRefreshIn = Math.Max(0, _nextRefreshIn - 5);
+                if (_nextRefreshIn == 0) _nextRefreshIn = _refreshIntervalSeconds;
+                InvokeAsync(StateHasChanged);
+            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+        }
+    }
+
+    private string GetSnapshotUrl(string cameraId)
+        => $"/api/snapshot/{cameraId}?w=640&h=360&t={DateTime.Now.Ticks}";
+
+    private string GetStreamModeBadge()
+  => _streamMode switch
+        {
+      StreamMode.Hls => I18n.Get("HlsLiveBadge"),
+      _ => I18n.Get("Snapshot")
+        };
+
+  private string GetStreamModeDescription()
+        => _streamMode switch
+        {
+ StreamMode.Hls => I18n.Get("HlsStreamDesc"),
+   _ => _autoRefresh ? I18n.Format("SnapshotDesc", $"{_refreshIntervalSeconds}s") : I18n.Get("SnapshotDescOff")
+        };
+
+    private string GetFullscreenElementId(string cameraId)
+        => _streamMode == StreamMode.Hls ? $"video-{cameraId}" : $"camera-{cameraId}";
+
+    private async Task ToggleFullscreen()
+        => await JS.InvokeVoidAsync("toggleFullscreen");
+
+    private async Task ShowCameraFullscreen(string elementId)
+    {
+        try
+        {
+    await JS.InvokeVoidAsync("eval", $"document.getElementById('{elementId}').requestFullscreen()");
+        }
+        catch { }
+    }
+
+    private async Task InitializeWakeLock()
+    {
+    try
+        {
+       await JS.InvokeVoidAsync("requestWakeLock");
+        }
+        catch (Exception ex)
+        {
+Console.WriteLine($"Wake lock could not be activated: {ex.Message}");
+     }
+    }
+
+    private void StartStreamWatchdog()
+    {
+        // Stream watchdog runs every 30s to check for dead streams
+        _streamWatchdog = new System.Threading.Timer(async _ =>
+        {
+            if (_streamMode == StreamMode.Hls)
+            {
+                await InvokeAsync(async () =>
+                {
+                    foreach (var camera in _cameras.Where(c => c.IsOnline))
+                    {
+   try
+   {
+     var isActive = await JS.InvokeAsync<bool>("isHlsPlayerActive", camera.Id);
+          
+        if (!isActive && _hlsStreamsStarted.ContainsKey(camera.Id))
+   {
+   Console.WriteLine($"[Watchdog] Stream for {camera.Id} is dead, restarting...");
+    _hlsStreamsStarted.Remove(camera.Id);
+  await StartHlsStream(camera.Id);
+    }
+          }
+     catch (Exception ex)
+     {
+    Console.WriteLine($"[Watchdog] Error for {camera.Id}: {ex.Message}");
+           }
+      }
+     });
+   }
+ }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)); // 30s instead of 10s
+    }
+
+    public override void Dispose()
+    {
+        _refreshTimer?.Dispose();
+        _countdownTimer?.Dispose();
+        _streamWatchdog?.Dispose();
+
+        if (_streamMode == StreamMode.Hls)
+        {
+            _ = StopAllHlsStreams();
+        }
+
+        base.Dispose();
+    }
+
+    private class HlsStartResponse
+    {
+        public bool Success { get; set; }
+        public string? PlaylistUrl { get; set; }
+    }
+}

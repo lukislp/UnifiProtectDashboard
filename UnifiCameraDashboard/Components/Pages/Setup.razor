@@ -1,0 +1,465 @@
+@page "/setup"
+@rendermode InteractiveServer
+@using UnifiCameraDashboard.Services
+@using UnifiCameraDashboard.Models
+@inject ISettingsService SettingsService
+@inject IUnifiProtectService ProtectService
+@inject IUnifiCameraService CameraService
+@inject I18nService I18n
+@inject NavigationManager Navigation
+
+<PageTitle>@I18n.Get("SetupTitle")</PageTitle>
+
+<div class="setup-wizard">
+    <div class="setup-container">
+        <div class="setup-header">
+            <h1>
+                <i class="bi bi-gear-fill"></i>
+                @I18n.Get("SetupWelcome")
+            </h1>
+            <p class="lead">@I18n.Get("SetupLead")</p>
+        </div>
+
+        @if (_currentStep == 1)
+        {
+            <div class="setup-step fade-in">
+                <div class="step-indicator">
+                    <span class="badge bg-primary">@I18n.Get("SetupStep1")</span>
+                </div>
+                <h3>
+                    <i class="bi bi-router"></i>
+                    @I18n.Get("SetupConsoleTitle")
+                </h3>
+                <p>@I18n.Get("SetupConsoleDesc")</p>
+
+                <div class="form-group mb-4">
+                    <label class="form-label">@I18n.Get("SetupConsoleUrl")</label>
+                    <input type="text"
+                           class="form-control form-control-lg"
+                           @bind="_unifiUrl"
+                           placeholder="https://192.168.2.20" />
+                    <small class="form-text text-muted">
+                        @I18n.Get("SetupConsoleUrlHint")
+                    </small>
+                </div>
+
+                @if (_showUrlError)
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        @I18n.Get("SetupInvalidUrl")
+                    </div>
+                }
+
+                <div class="setup-actions">
+                    <button class="btn btn-primary btn-lg" @onclick="ValidateAndNextStep" disabled="@_isProcessing">
+                        @I18n.Get("SetupNext")
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
+        else if (_currentStep == 2)
+        {
+            <div class="setup-step fade-in">
+                <div class="step-indicator">
+                    <span class="badge bg-primary">@I18n.Get("SetupStep2")</span>
+                </div>
+                <h3>
+                    <i class="bi bi-person-check"></i>
+                    @I18n.Get("SetupCredentialsTitle")
+                </h3>
+                <p>@I18n.Get("SetupCredentialsDesc")</p>
+
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>@I18n.Get("SetupImportant"):</strong> @I18n.Get("SetupApiHint")
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label">@I18n.Get("SetupUsername")</label>
+                    <input type="text"
+                           class="form-control form-control-lg"
+                           @bind="_username"
+                           placeholder="dashboard" />
+                </div>
+
+                <div class="form-group mb-4">
+                    <label class="form-label">@I18n.Get("SetupPassword")</label>
+                    <input type="password"
+                           class="form-control form-control-lg"
+                           @bind="_password"
+                           placeholder="********" />
+                </div>
+
+                @if (_showAuthError)
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        @_errorMessage
+                    </div>
+                }
+
+                @if (_isProcessing)
+                {
+                    <div class="text-center mb-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">@I18n.Get("SetupTestingConnection")</span>
+                        </div>
+                        <p class="mt-2">@I18n.Get("SetupTestingConnection")</p>
+                    </div>
+                }
+
+                <div class="setup-actions">
+                    <button class="btn btn-outline-secondary btn-lg me-2" @onclick="PreviousStep">
+                        <i class="bi bi-arrow-left"></i>
+                        @I18n.Get("SetupBack")
+                    </button>
+                    <button class="btn btn-primary btn-lg" @onclick="TestAndAuthenticate" disabled="@_isProcessing">
+                        @I18n.Get("SetupTestConnection")
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
+        else if (_currentStep == 3)
+        {
+            <div class="setup-step fade-in">
+                <div class="step-indicator">
+                    <span class="badge bg-primary">@I18n.Get("SetupStep3")</span>
+                </div>
+                <h3>
+                    <i class="bi bi-camera-video"></i>
+                    @I18n.Get("SetupDiscoverTitle")
+                </h3>
+                <p>@I18n.Get("SetupDiscoverDesc")</p>
+
+                @if (_isDiscovering)
+                {
+                    <div class="text-center mb-4">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">@I18n.Get("SetupSearchingCameras")</span>
+                        </div>
+                        <h5>@I18n.Get("SetupSearchingCameras")</h5>
+                        <p class="text-muted">@I18n.Get("SetupMayTakeMoment")</p>
+                    </div>
+                }
+                else if (_discoveredCameras.Any())
+                {
+                    <div class="alert alert-success mb-4">
+                        <i class="bi bi-check-circle"></i>
+                        <strong>@I18n.Format("SetupCamerasFound", _discoveredCameras.Count)</strong>
+                    </div>
+
+                    <div class="cameras-preview">
+                        @foreach (var camera in _discoveredCameras.Take(4))
+                        {
+                            <div class="camera-preview-card">
+                                <div class="camera-preview-header">
+                                    <span class="badge bg-success">@I18n.Get("Online")</span>
+                                </div>
+                                <div class="camera-preview-body">
+                                    <i class="bi bi-camera-video-fill"></i>
+                                    <h6>@camera.Name</h6>
+                                    <small class="text-muted">@camera.Model</small>
+                                </div>
+                            </div>
+                        }
+                        @if (_discoveredCameras.Count > 4)
+                        {
+                            <div class="camera-preview-card more-cameras">
+                                <div class="camera-preview-body">
+                                    <i class="bi bi-plus-circle"></i>
+                                    <h6>+@(_discoveredCameras.Count - 4) more</h6>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (_showDiscoveryError)
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        @_errorMessage
+                    </div>
+                }
+
+                <div class="setup-actions">
+                    @if (!_isDiscovering && !_discoveredCameras.Any())
+                    {
+                        <button class="btn btn-outline-secondary btn-lg me-2" @onclick="PreviousStep">
+                            <i class="bi bi-arrow-left"></i>
+                            @I18n.Get("SetupBack")
+                        </button>
+                        <button class="btn btn-primary btn-lg" @onclick="StartDiscovery" disabled="@_isProcessing">
+                            @I18n.Get("SetupDiscoverCameras")
+                            <i class="bi bi-search"></i>
+                        </button>
+                    }
+                    else if (_discoveredCameras.Any())
+                    {
+                        <button class="btn btn-success btn-lg" @onclick="CompleteSetup" disabled="@_isProcessing">
+                            <i class="bi bi-check-circle"></i>
+                            @I18n.Get("SetupCompleteSetup")
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .setup-wizard {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+        padding: 2rem;
+    }
+
+    .setup-container {
+        max-width: 600px;
+        width: 100%;
+        background: var(--tile-bg, #1e2336);
+        border-radius: 16px;
+        padding: 3rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .setup-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+        .setup-header h1 {
+            color: var(--text-primary, #fff);
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .setup-header .lead {
+            color: var(--text-secondary, #9ca3af);
+        }
+
+    .setup-step {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .step-indicator {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+        .step-indicator .badge {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+        }
+
+    .setup-step h3 {
+        color: var(--text-primary, #fff);
+        margin-bottom: 1rem;
+    }
+
+    .setup-step p {
+        color: var(--text-secondary, #9ca3af);
+        margin-bottom: 2rem;
+    }
+
+    .form-control-lg {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-primary, #fff);
+        padding: 0.75rem 1rem;
+    }
+
+        .form-control-lg:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--status-online, #10b981);
+            color: var(--text-primary, #fff);
+            box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+        }
+
+        .form-control-lg::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+    .setup-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .cameras-preview {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .camera-preview-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+    }
+
+    .camera-preview-header {
+        margin-bottom: 0.5rem;
+    }
+
+    .camera-preview-body i {
+        font-size: 2rem;
+        color: var(--status-online, #10b981);
+        margin-bottom: 0.5rem;
+    }
+
+    .camera-preview-body h6 {
+        color: var(--text-primary, #fff);
+        margin-bottom: 0.25rem;
+    }
+
+    .more-cameras {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: var(--status-online, #10b981);
+    }
+
+        .more-cameras i {
+            color: var(--status-online, #10b981);
+        }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+@code {
+    private int _currentStep = 1;
+    private bool _isProcessing = false;
+    private bool _isDiscovering = false;
+    private bool _showUrlError = false;
+    private bool _showAuthError = false;
+    private bool _showDiscoveryError = false;
+    private string _errorMessage = "";
+
+    private string _unifiUrl = "https://192.168.2.20";
+    private string _username = "";
+    private string _password = "";
+    private List<UnifiCameraDashboard.Models.UnifiCamera> _discoveredCameras = new();
+
+    private async Task ValidateAndNextStep()
+    {
+        _showUrlError = false;
+
+        if (string.IsNullOrWhiteSpace(_unifiUrl) || !Uri.TryCreate(_unifiUrl, UriKind.Absolute, out _))
+        {
+            _showUrlError = true;
+            return;
+        }
+
+        _currentStep = 2;
+    }
+
+    private void PreviousStep()
+    {
+        if (_currentStep > 1)
+        {
+            _currentStep--;
+            _showAuthError = false;
+            _showDiscoveryError = false;
+        }
+    }
+
+    private async Task TestAndAuthenticate()
+    {
+        _isProcessing = true;
+        _showAuthError = false;
+        StateHasChanged();
+
+        try
+        {
+            var success = await ProtectService.AuthenticateAsync(_unifiUrl, _username, _password);
+
+            if (success)
+            {
+                await SettingsService.SaveUnifiCredentialsAsync(_unifiUrl, _username, _password);
+                _currentStep = 3;
+            }
+            else
+            {
+                _showAuthError = true;
+                _errorMessage = I18n.Get("SetupAuthFailed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _showAuthError = true;
+            _errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartDiscovery()
+    {
+        _isDiscovering = true;
+        _showDiscoveryError = false;
+        StateHasChanged();
+
+        try
+        {
+            _discoveredCameras = await CameraService.DiscoverCamerasAsync();
+
+            if (!_discoveredCameras.Any())
+            {
+                _showDiscoveryError = true;
+                _errorMessage = "No cameras found. Please check your Unifi Protect configuration.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _showDiscoveryError = true;
+            _errorMessage = $"Error while searching: {ex.Message}";
+        }
+        finally
+        {
+            _isDiscovering = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CompleteSetup()
+    {
+        _isProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            await CameraService.SaveDiscoveredCamerasAsync(_discoveredCameras);
+            await SettingsService.SetSettingAsync("RefreshIntervalSeconds", "5");
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _showDiscoveryError = true;
+            _errorMessage = $"Error completing setup: {ex.Message}";
+            _isProcessing = false;
+            StateHasChanged();
+        }
+    }
+}

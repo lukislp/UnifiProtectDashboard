@@ -1,0 +1,15 @@
+@* Detects the browser language via navigator.language and updates I18nService.
+   Renders nothing — purely a side-effect component. *@
+@rendermode InteractiveServer
+@inject I18nService I18n
+@inject IJSRuntime JS
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var lang = await JS.InvokeAsync<string>("eval", "navigator.language");
+        I18n.SetLanguageFromBrowser(lang);
+    }
+}

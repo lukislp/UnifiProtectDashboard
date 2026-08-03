@@ -1,0 +1,28 @@
+# HLS Streaming Directory
+
+This directory is used by FFmpeg to store HLS streaming segments (.m3u8 and .ts files).
+
+**Runtime files:**
+- `stream.m3u8` - HLS playlist
+- `segment_*.ts` - Video segments
+
+**Note:** These files are transient and auto-generated. They are ignored by Git (see .gitignore).
+
+## Directory Structure
+
+```
+hls/
+??? {camera-id}/
+    ??? stream.m3u8
+    ??? segment_000.ts
+    ??? segment_001.ts
+    ??? ...
+```
+
+## Permissions
+
+For IIS deployment, ensure the IIS Application Pool has write permissions to this directory:
+
+```powershell
+icacls "wwwroot\hls" /grant "IIS AppPool\UnifiCameraDashboard:(OI)(CI)F" /T
+```

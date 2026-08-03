@@ -1,0 +1,23 @@
+services:
+  unifidashboard:
+    build:
+      context: ./UnifiCameraDashboard
+      dockerfile: Dockerfile
+    container_name: unifidashboard
+    ports:
+      - "5003:5003"
+    volumes:
+      - unifidashboard_data:/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DATA_DIR=/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003/api/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  unifidashboard_data:

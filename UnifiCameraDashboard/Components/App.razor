@@ -1,0 +1,44 @@
+@inject I18nService I18n
+@code {
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // SSR: pre-set language from Accept-Language header so the first render
+        // already uses the correct language before JS is available
+        if (HttpContext is not null)
+        {
+            var acceptLang = HttpContext.Request.Headers["Accept-Language"].ToString();
+            I18n.SetLanguageFromHeader(acceptLang);
+        }
+    }
+}
+<!DOCTYPE html>
+<html lang="@I18n.Language">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <base href="/" />
+    <title>Unifi Camera Dashboard</title>
+
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="css/camera-dashboard.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="UnifiCameraDashboard.styles.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <LanguageProvider />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="js/camera-streams.js"></script>
+</body>
+
+</html>

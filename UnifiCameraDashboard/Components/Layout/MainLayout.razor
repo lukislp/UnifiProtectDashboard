@@ -1,0 +1,13 @@
+@inherits LayoutComponentBase
+@inject I18nService I18n
+
+<div class="dashboard-layout">
+    @Body
+</div>
+
+<div id="blazor-error-ui">
+    <i class="bi bi-exclamation-triangle"></i>
+    @I18n.Get("ErrorUnhandled")
+    <a href="" class="reload">@I18n.Get("ErrorReload")</a>
+    <a class="dismiss">&#x2715;</a>
+</div>

@@ -1,0 +1,278 @@
+@page "/settings"
+@rendermode InteractiveServer
+@using UnifiCameraDashboard.Services
+@inject ISettingsService SettingsService
+@inject I18nService I18n
+@inject NavigationManager Navigation
+
+<PageTitle>@I18n.Get("SettingsTitle")</PageTitle>
+
+<div class="settings-page">
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3>
+                            <i class="bi bi-gear"></i>
+                            @I18n.Get("SettingsTitle")
+                        </h3>
+                    </div>
+                    <div class="card-body">
+    
+                        <!-- Unifi Protect Connection -->
+                        <div class="settings-section mb-4">
+                            <h5><i class="bi bi-server"></i> @I18n.Get("SettingsUnifiConnection")</h5>
+                            <hr />
+   
+                            <div class="mb-3">
+                                <label class="form-label">@I18n.Get("SettingsUnifiUrl")</label>
+                                <input type="text" class="form-control" @bind="_protectUrl" placeholder="https://192.168.2.20" />
+                                <small class="form-text text-muted">@I18n.Get("SettingsUnifiUrlHint")</small>
+                            </div>
+    
+                            <div class="mb-3">
+                                <label class="form-label">@I18n.Get("SettingsUsername")</label>
+                                <input type="text" class="form-control" @bind="_username" placeholder="dashboard" />
+                                <small class="form-text text-muted">@I18n.Get("SettingsUsernameHint")</small>
+                            </div>
+      
+                            <div class="mb-3">
+                                <label class="form-label">@I18n.Get("SettingsPassword")</label>
+                                <input type="password" class="form-control" @bind="_password" />
+                            </div>
+
+                            <button class="btn btn-success" @onclick="SaveCredentials" disabled="@_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-save"></i>
+                                @I18n.Get("SaveCredentials")
+                            </button>
+                        </div>
+
+                        <!-- Performance Settings -->
+                        <div class="settings-section mb-4">
+                            <h5><i class="bi bi-speedometer"></i> @I18n.Get("SettingsPerformance")</h5>
+                            <hr />
+
+                            <div class="mb-3">
+                                <label class="form-label">@I18n.Get("SettingsRefreshInterval")</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" @bind="_refreshInterval" min="1" max="60" />
+                                    <span class="input-group-text">@I18n.Get("SettingsRefreshIntervalUnit")</span>
+                                </div>
+                                <small class="form-text text-muted">
+                                    @I18n.Get("SettingsRefreshIntervalHint")
+                                </small>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-info-circle"></i> @I18n.Get("SettingsStreamComparison")</h6>
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>@I18n.Get("SettingsMode")</th>
+                                            <th>@I18n.Get("SettingsFps")</th>
+                                            <th>@I18n.Get("SettingsBandwidth")</th>
+                                            <th>@I18n.Get("SettingsRecommendation")</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Snapshot (1s)</strong></td>
+                                            <td>~1 FPS</td>
+                                            <td>~60 KB/s</td>
+                                            <td>@I18n.Get("SettingsEfficientSmooth")</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Snapshot (5s)</strong></td>
+                                            <td>~0.2 FPS</td>
+                                            <td>~12 KB/s</td>
+                                            <td>@I18n.Get("SettingsVeryEfficient")</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>MJPEG Stream</strong></td>
+                                            <td>~10 FPS</td>
+                                            <td>~600 KB/s</td>
+                                            <td>@I18n.Get("SettingsHigherLoad")</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" @bind="_autoDiscovery" />
+                                <label class="form-check-label">@I18n.Get("SettingsAutoDiscovery")</label>
+                                <br />
+                                <small class="form-text text-muted">@I18n.Get("SettingsAutoDiscoveryHint")</small>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(_statusMessage))
+                        {
+                            <div class="alert alert-@_statusClass" role="alert">
+                                @_statusMessage
+                            </div>
+                        }
+
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" @onclick="SaveAllSettings" disabled="@_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-save"></i>
+                                @I18n.Get("SaveAllSettings")
+                            </button>
+
+                            <a href="/" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i>
+                                @I18n.Get("BackToDashboard")
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .settings-page {
+        min-height: 100vh;
+        background: var(--dashboard-bg, #0a0e27);
+        padding: 2rem 0;
+    }
+
+    .card {
+        background: var(--tile-bg, #1e2336);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-primary, #fff);
+    }
+
+    .card-header {
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .form-control {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-primary, #fff);
+    }
+
+        .form-control:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--status-online, #10b981);
+            color: var(--text-primary, #fff);
+            box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+    .settings-section h5 {
+        color: var(--status-online, #10b981);
+        margin-bottom: 1rem;
+    }
+
+    .table {
+        color: var(--text-primary, #fff);
+        font-size: 0.9rem;
+    }
+</style>
+
+@code {
+    private string _protectUrl = "";
+    private string _username = "";
+    private string _password = "";
+    private int _refreshInterval = 5;
+    private bool _autoDiscovery = true;
+    private bool _isSaving = false;
+    private string _statusMessage = "";
+    private string _statusClass = "info";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load current settings
+        _protectUrl = await SettingsService.GetUnifiProtectUrlAsync() ?? "https://192.168.2.20";
+        _username = await SettingsService.GetUsernameAsync() ?? "";
+        _password = await SettingsService.GetPasswordAsync() ?? "";
+        _refreshInterval = await SettingsService.GetRefreshIntervalAsync();
+        _autoDiscovery = await SettingsService.GetAutoDiscoveryEnabledAsync();
+    }
+
+    private async Task SaveCredentials()
+    {
+        try
+        {
+            _isSaving = true;
+            _statusMessage = "";
+            StateHasChanged();
+
+            if (string.IsNullOrEmpty(_protectUrl) || string.IsNullOrEmpty(_username) || string.IsNullOrEmpty(_password))
+            {
+                _statusMessage = I18n.Get("SettingsFillAllFields");
+                _statusClass = "warning";
+                return;
+            }
+
+            await SettingsService.SaveUnifiCredentialsAsync(_protectUrl, _username, _password);
+
+            _statusMessage = I18n.Get("SettingsSavedCredentials");
+            _statusClass = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error: {ex.Message}";
+            _statusClass = "danger";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveAllSettings()
+    {
+        try
+        {
+            _isSaving = true;
+            _statusMessage = "";
+            StateHasChanged();
+
+            // Save credentials
+            if (!string.IsNullOrEmpty(_protectUrl) && !string.IsNullOrEmpty(_username) && !string.IsNullOrEmpty(_password))
+            {
+                await SettingsService.SaveUnifiCredentialsAsync(_protectUrl, _username, _password);
+            }
+
+            // Save refresh interval
+            await SettingsService.SetSettingAsync("RefreshIntervalSeconds", _refreshInterval.ToString());
+
+            // Save auto-discovery
+            await SettingsService.SetSettingAsync("AutoDiscoveryEnabled", _autoDiscovery.ToString());
+
+            _statusMessage = I18n.Get("SettingsSavedAll");
+            _statusClass = "success";
+
+            // Navigate back to dashboard after 2 seconds
+            await Task.Delay(2000);
+            Navigation.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error: {ex.Message}";
+            _statusClass = "danger";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+}
