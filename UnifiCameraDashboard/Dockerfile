@@ -6,7 +6,12 @@ COPY ["UnifiCameraDashboard.csproj", "./"]
 RUN dotnet restore "UnifiCameraDashboard.csproj"
 
 COPY . .
-RUN dotnet publish "UnifiCameraDashboard.csproj" -c Release -o /app/publish --no-restore
+# No --no-restore here: the restore above ran before wwwroot existed in the build context
+# (it was copied in afterwards, for Docker layer caching), so its static web assets manifest
+# never saw any of this project's own static files - publishing with --no-restore against that
+# stale manifest silently drops the entire wwwroot output, including the Blazor framework
+# scripts (_framework/blazor.web.js), breaking all server-side interactivity at runtime.
+RUN dotnet publish "UnifiCameraDashboard.csproj" -c Release -o /app/publish
 
 # ---- Runtime Stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
