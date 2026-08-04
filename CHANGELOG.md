@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.0...v1.0.1) (2026-08-04)
+
+
+### Bug Fixes
+
+* Dockerfile silently dropped wwwroot, breaking all interactivity ([62779be](https://github.com/lukislp/UnifiProtectDashboard/commit/62779be1a7868c9141e41c978ec5118d78fed97a))
+
 # 1.0.0 (2026-08-04)
 
 
