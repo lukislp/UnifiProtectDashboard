@@ -2,8 +2,12 @@
 * text=auto
 
 # Source code
-*.cs text diff=csharp
-*.razor text
+# eol=crlf: .editorconfig's end_of_line=crlf applies platform-wide, but plain `text`
+# alone leaves checkout normalization dependent on the checking-out platform's own git
+# config - a Linux CI runner checks these out as LF by default, which then fails
+# `dotnet format --verify-no-changes` against the CRLF `.editorconfig` convention.
+*.cs text diff=csharp eol=crlf
+*.razor text eol=crlf
 *.js text
 *.ts text
 *.json text
