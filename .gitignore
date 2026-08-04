@@ -227,3 +227,6 @@ tmp/
 # Cleanup script (used during development)
 Clean-Docs.ps1
 CLEANUP-SUMMARY.md
+
+# Never commit this
+CLAUDE.md

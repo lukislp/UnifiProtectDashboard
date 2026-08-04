@@ -1,0 +1,268 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_VERSION: "10.0.x"
+  CONFIGURATION: Release
+  IMAGE: ghcr.io/lukislp/unifiprotectdashboard
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------
+  # Test stage — runs on every push to main AND every pull request
+  # ---------------------------------------------------------------------
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+      - run: dotnet restore UnifiCameraDashboard.sln
+      - run: dotnet build UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+
+  test-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+      - run: dotnet format UnifiCameraDashboard.sln --verify-no-changes --verbosity diagnostic
+
+  test-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+      - run: dotnet restore UnifiCameraDashboard.sln
+      - run: |
+          dotnet list UnifiCameraDashboard.sln package --vulnerable --include-transitive | tee nuget-vulnerabilities.txt
+          if grep -q "has the following vulnerable packages" nuget-vulnerabilities.txt; then
+            echo "NuGet advisory findings detected - see nuget-vulnerabilities.txt artifact for details."
+            if grep -qE "^\s*>\s+\S+.*\s+(High|Critical)\s+http" nuget-vulnerabilities.txt; then
+              echo "::error::High or Critical severity vulnerability found among the findings above."
+              exit 1
+            fi
+          else
+            echo "No known vulnerable NuGet packages found."
+          fi
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuget-vulnerabilities
+          path: nuget-vulnerabilities.txt
+          retention-days: 7
+
+  build:
+    # No implicit stage-sequencing under GitHub's DAG model (unlike GitLab) - wait for
+    # every test job explicitly.
+    needs: [test-build, test-lint, test-security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+      - run: dotnet restore UnifiCameraDashboard.sln
+      - run: dotnet build UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+
+  # ---------------------------------------------------------------------
+  # Version / docker / release — push to main only
+  # ---------------------------------------------------------------------
+  get-version:
+    needs: [build]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: unifiprotectdashboard-release-chain
+      cancel-in-progress: false
+    # @semantic-release/github verifies push/write access as part of its plugin lifecycle
+    # even during a dry run - a read-only token fails that check outright. No actual writes
+    # happen here regardless of these permissions; dry_run: true never pushes/tags/releases.
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      next_version: ${{ steps.semrel.outputs.new_release_version }}
+      published: ${{ steps.semrel.outputs.new_release_published }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: semrel
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        with:
+          dry_run: true
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/github
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fail if no next version determined
+        if: steps.semrel.outputs.new_release_published != 'true'
+        run: |
+          echo "::error::semantic-release did not determine a next version (no releasable commits since the last tag). Aborting instead of silently skipping."
+          exit 1
+
+  docker-build-push:
+    needs: [get-version]
+    if: github.event_name == 'push' && needs.get-version.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      NEXT_VERSION: ${{ needs.get-version.outputs.next_version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Guard against duplicate tag
+        run: |
+          if docker manifest inspect "${{ env.IMAGE }}:${{ env.NEXT_VERSION }}" >/dev/null 2>&1; then
+            echo "::error::registry tag ${{ env.NEXT_VERSION }} already exists (version race with a parallel run). Do NOT retry this run; wait for it to finish, then push again to produce a fresh version."
+            exit 1
+          fi
+      # Build once, load it locally (amd64 only, matching the runner) to smoke-check
+      # before pushing anything multi-arch. Reuses the exact endpoint docker-compose.yml's
+      # own healthcheck already relies on.
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ./UnifiCameraDashboard
+          load: true
+          tags: unifiprotectdashboard:smoke-check
+          cache-from: type=gha
+      - name: Smoke-check the built image
+        run: |
+          docker run -d --name unifiprotectdashboard-smoke -p 5003:5003 unifiprotectdashboard:smoke-check
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5003/api/ping > /dev/null; then
+              echo "container is healthy"
+              docker rm -f unifiprotectdashboard-smoke
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::container did not become healthy in time"
+          docker logs unifiprotectdashboard-smoke
+          docker rm -f unifiprotectdashboard-smoke
+          exit 1
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ./UnifiCameraDashboard
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ env.NEXT_VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  trivy-scan:
+    needs: [get-version, docker-build-push]
+    if: github.event_name == 'push' && needs.get-version.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      NEXT_VERSION: ${{ needs.get-version.outputs.next_version }}
+    steps:
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ env.NEXT_VERSION }}
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+
+  semantic-release:
+    needs: [get-version, docker-build-push]
+    if: github.event_name == 'push' && needs.get-version.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: unifiprotectdashboard-release-chain
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: semrel
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/github
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      # Retry once for the narrow window where an out-of-band push to main landed between
+      # this job's checkout and its own push (the concurrency group above already serializes
+      # overlapping runs of this workflow, so this only guards against a genuinely external push).
+      - if: steps.semrel.outcome == 'failure'
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+      - if: steps.semrel.outcome == 'failure'
+        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/github
+            @semantic-release/git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
