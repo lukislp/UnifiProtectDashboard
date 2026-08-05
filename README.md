@@ -1,5 +1,10 @@
 # UniFi Camera Dashboard
 
+[![CI/CD](https://github.com/lukislp/UnifiProtectDashboard/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/lukislp/UnifiProtectDashboard/actions/workflows/ci-cd.yml)
+[![Release](https://img.shields.io/github/v/release/lukislp/UnifiProtectDashboard)](https://github.com/lukislp/UnifiProtectDashboard/releases)
+[![License: MIT](https://img.shields.io/github/license/lukislp/UnifiProtectDashboard)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
+
 A self-hosted Blazor Server dashboard for [UniFi Protect](https://ui.com/camera-security) cameras. Displays live snapshots and HLS streams for all discovered cameras, with automatic session management and a setup wizard on first run.
 
 ## Features
