@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.1...v1.0.2) (2026-08-05)
+
+
+### Bug Fixes
+
+* surface build/release/license status via README badges ([7388438](https://github.com/lukislp/UnifiProtectDashboard/commit/73884384f69bff33486a0933e1a9803d15678c96))
+
 ## [1.0.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.0...v1.0.1) (2026-08-04)
 
 
