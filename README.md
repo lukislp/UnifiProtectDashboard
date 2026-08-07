@@ -7,6 +7,8 @@
 
 A self-hosted Blazor Server dashboard for [UniFi Protect](https://ui.com/camera-security) cameras. Displays live snapshots and HLS streams for all discovered cameras, with automatic session management and a setup wizard on first run.
 
+![UniFi Camera Dashboard first-run setup wizard](docs/screenshot.png)
+
 ## Features
 
 - **Snapshot mode** — auto-refreshing JPEG previews proxied through the server (the browser never touches the UniFi Protect API directly)
