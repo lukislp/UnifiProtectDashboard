@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.2...v1.0.3) (2026-08-07)
+
+
+### Bug Fixes
+
+* add a first-run setup wizard screenshot to the README ([5b7b5ed](https://github.com/lukislp/UnifiProtectDashboard/commit/5b7b5ed33fac3cf569e3544e0b67227801eacf2e))
+
 ## [1.0.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.1...v1.0.2) (2026-08-05)
 
 
