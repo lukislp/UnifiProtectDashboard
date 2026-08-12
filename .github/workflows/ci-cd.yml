@@ -101,42 +101,25 @@ jobs:
           path: nuget-vulnerabilities.json
           retention-days: 7
 
-  build:
-    # No implicit stage-sequencing under GitHub's DAG model (unlike GitLab) - wait for
-    # every test job explicitly.
-    needs: [test-build, test-lint, test-security]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-dotnet@v6.0.0
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-      - uses: actions/cache@v6.1.0
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
-          restore-keys: |
-            nuget-${{ runner.os }}-
-      - run: dotnet restore UnifiCameraDashboard.sln
-      - run: dotnet build UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-restore
-
   # ---------------------------------------------------------------------
   # Version / docker / release — push to main only
   # ---------------------------------------------------------------------
   get-version:
-    needs: [build]
+    # No separate "build" job here - test-build already compiles the solution, and rebuilding
+    # it again here added no new signal, just wait time.
+    needs: [test-build, test-lint, test-security]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     concurrency:
       group: unifiprotectdashboard-release-chain
       cancel-in-progress: false
-    # @semantic-release/github verifies push/write access as part of its plugin lifecycle
-    # even during a dry run - a read-only token fails that check outright. No actual writes
-    # happen here regardless of these permissions; dry_run: true never pushes/tags/releases.
+    # @semantic-release/github's verifyConditions step checks the token has repo push access
+    # (contents: write) even during a dry run - a read-only token fails that check outright.
+    # issues:write/pull-requests:write are NOT needed here: those only get exercised by the
+    # publish/success/fail lifecycle steps, which dry_run: true skips entirely - confirmed
+    # live on the studylife-ai sibling repo (2026-08-12).
     permissions:
       contents: write
-      issues: write
-      pull-requests: write
     outputs:
       next_version: ${{ steps.semrel.outputs.new_release_version }}
       published: ${{ steps.semrel.outputs.new_release_published }}
@@ -196,6 +179,7 @@ jobs:
           load: true
           tags: unifiprotectdashboard:smoke-check
           cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Smoke-check the built image
         run: |
           docker run -d --name unifiprotectdashboard-smoke -p 5003:5003 unifiprotectdashboard:smoke-check
