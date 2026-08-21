@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.8.0...v1.8.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ci:** re-trigger a release to validate the new native arm64 pipeline ([f3eefff](https://github.com/lukislp/UnifiProtectDashboard/commit/f3eefff18379043c0ed76cfbf1fcaa9bd5f40570))
+
 # [1.8.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.7.2...v1.8.0) (2026-08-21)
 
 
