@@ -23,6 +23,13 @@ public interface IUnifiProtectService
     /// under the same session. Returns null if credentials aren't configured or auth fails.
     /// </summary>
     Task<ProtectSessionInfo?> GetSessionForWebSocketAsync();
+
+    /// <summary>
+    /// Lists events in the given time range via the REST events endpoint - used to backfill
+    /// events missed while the realtime websocket was disconnected. Returns an empty list (not
+    /// null) on any failure, matching this service's existing style for read methods.
+    /// </summary>
+    Task<List<ProtectEventPayload>> GetEventsAsync(DateTimeOffset start, DateTimeOffset end);
 }
 
 public class UnifiProtectService : IUnifiProtectService, IDisposable
@@ -462,6 +469,43 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
         {
             _logger.LogError(ex, "Error retrieving bootstrap data");
             return null;
+        }
+    }
+
+    public async Task<List<ProtectEventPayload>> GetEventsAsync(DateTimeOffset start, DateTimeOffset end)
+    {
+        try
+        {
+            if (!await EnsureAuthenticatedFromSettingsAsync() || _authenticatedClient == null)
+            {
+                return new List<ProtectEventPayload>();
+            }
+
+            if (!string.IsNullOrEmpty(_csrfToken))
+            {
+                _authenticatedClient.DefaultRequestHeaders.Remove("X-CSRF-Token");
+                _authenticatedClient.DefaultRequestHeaders.Add("X-CSRF-Token", _csrfToken);
+            }
+
+            var url = $"/proxy/protect/api/events?start={start.ToUnixTimeMilliseconds()}&end={end.ToUnixTimeMilliseconds()}";
+            var response = await _authenticatedClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Error retrieving events: {Status} - {Error}", response.StatusCode, error);
+                return new List<ProtectEventPayload>();
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var events = JsonSerializer.Deserialize<List<ProtectEventPayload>>(json, options);
+            return events ?? new List<ProtectEventPayload>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving events between {Start} and {End}", start, end);
+            return new List<ProtectEventPayload>();
         }
     }
 

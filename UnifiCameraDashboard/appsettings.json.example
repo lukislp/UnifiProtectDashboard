@@ -10,5 +10,8 @@
   "ServerSettings": {
     "HttpPort": 5008,
     "HttpsPort": 5009
+  },
+  "EventIngestion": {
+    "Enabled": true
   }
 }
