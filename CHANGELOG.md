@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.3.0...v1.4.0) (2026-08-21)
+
+
+### Features
+
+* **ui:** add chronological events page ([fff6acf](https://github.com/lukislp/UnifiProtectDashboard/commit/fff6acf8a7f89650e8eb75e0ca3af6b53a059bb3))
+
 # [1.3.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.2.0...v1.3.0) (2026-08-21)
 
 
