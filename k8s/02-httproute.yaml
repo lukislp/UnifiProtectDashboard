@@ -1,0 +1,60 @@
+# HTTPRoute for the shared NGF gateway (studylife repo's k8s/07c-gateway.yaml). Both hostnames
+# are internal-only, same trust level as every other service on this Gateway: heim.lan is
+# LAN-only DNS; the lukas2311-homelab.com one is NOT public internet exposure - it's only a
+# vehicle for a trusted (Cloudflare-issued) certificate on traffic NGINX Proxy Manager
+# terminates and forwards inside the network, never port-forwarded out.
+#
+# The two new listeners this route attaches to were added to the LIVE Gateway object via a
+# surgical `kubectl patch --type=json` (JSON Patch "add" at /spec/listeners/-, append-only) -
+# deliberately NOT via `kubectl apply -f` on the studylife repo's own k8s/07c-gateway.yaml,
+# per that file's own documented incident: applying it wholesale once silently reverted every
+# OTHER service's listener hostnames to stale values, breaking routing cluster-wide. That file
+# has since been updated to match (see its own history), but the safe append-only patch is the
+# one that actually ran against the live object.
+#
+# Requires a DNS entry for unifidashboard.heim.lan pointing at the Gateway's MetalLB IP
+# (192.168.20.241), plus an NGINX Proxy Manager proxy host forwarding
+# unifidashboard.lukas2311-homelab.com to that same hostname (SNI stays heim.lan, the public
+# Host header passes through) - both manual steps outside this repo's k8s/, same as every other
+# service on this Gateway.
+#
+# Bootstrap-only, NOT Flux-managed - this whole deployment isn't onboarded into the central
+# studylife repo's Flux pattern (see k8s/README.md).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: unifiprotectdashboard
+  namespace: unifiprotectdashboard
+spec:
+  parentRefs:
+    - name: studylife-gateway
+      namespace: nginx-gateway
+  hostnames:
+    - unifidashboard.heim.lan
+    - unifidashboard.lukas2311-homelab.com
+  rules:
+    - backendRefs:
+        - name: unifiprotectdashboard
+          port: 5003
+---
+# Same modest rate limit as every other exposed heim.lan service on this Gateway - personal-scale
+# traffic, no reason to diverge.
+apiVersion: gateway.nginx.org/v1alpha1
+kind: RateLimitPolicy
+metadata:
+  name: unifiprotectdashboard-rate-limit
+  namespace: unifiprotectdashboard
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: unifiprotectdashboard
+  rateLimit:
+    local:
+      rules:
+        - zoneSize: 10m
+          key: "$binary_remote_addr"
+          rate: 20r/s
+          burst: 200
+          noDelay: true
+    rejectCode: 503

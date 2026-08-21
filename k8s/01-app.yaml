@@ -1,0 +1,84 @@
+# Temporary S2 measurement deployment - pinned to pinode02 (the real 8GB Pi with headroom;
+# pinode01 is the control-plane node, already tight on memory). No Kubernetes Secret for Protect
+# credentials: the app stores them itself, AES-encrypted in its own SQLite DB, entered once via
+# the Setup wizard (same as every local test this whole project went through) - so first-time
+# setup here is: kubectl port-forward, open the wizard once, done.
+#
+# Not wired into the central studylife repo's Flux GitOps pattern - applied by hand
+# (kubectl apply -f k8s/) for the measurement week, not a permanent production onboarding.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: unifiprotectdashboard-data
+  namespace: unifiprotectdashboard
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests: { storage: 2Gi }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unifiprotectdashboard
+  namespace: unifiprotectdashboard
+  labels: { app: unifiprotectdashboard }
+spec:
+  replicas: 1
+  strategy:
+    # Single instance with an RWO volume (SQLite is a plain file, not built for concurrent
+    # writers) - same reasoning as the sibling apps' own single-instance deployments.
+    type: Recreate
+  selector:
+    matchLabels: { app: unifiprotectdashboard }
+  template:
+    metadata:
+      labels: { app: unifiprotectdashboard }
+    spec:
+      # Pinned to the real 8GB node this measurement is about - not left to the scheduler.
+      nodeSelector:
+        kubernetes.io/hostname: pinode02
+      containers:
+        - name: unifiprotectdashboard
+          # Not Flux-managed - bump this by hand for a future redeploy, no $imagepolicy marker.
+          image: ghcr.io/lukislp/unifiprotectdashboard:1.5.0
+          env:
+            - name: DATA_DIR
+              value: /data
+            - name: ASPNETCORE_URLS
+              value: http://+:5003
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+          ports:
+            - containerPort: 5003
+          resources:
+            # Conservative given pinode02 already runs other real workloads (~51% memory used at
+            # last check) - IntraOpNumThreads is already capped to 2 in the classifier itself, so
+            # this limit is a backstop, not the primary throttle.
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: 2000m, memory: 1536Mi }
+          readinessProbe:
+            httpGet: { path: /api/ping, port: 5003 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/ping, port: 5003 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: unifiprotectdashboard-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unifiprotectdashboard
+  namespace: unifiprotectdashboard
+spec:
+  type: ClusterIP
+  selector: { app: unifiprotectdashboard }
+  ports:
+    - port: 5003
+      targetPort: 5003

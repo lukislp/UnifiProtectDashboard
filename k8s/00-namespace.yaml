@@ -1,0 +1,21 @@
+# Dedicated namespace for the S2 measurement deployment, isolated from every other app already
+# on this cluster. NOT wired into the central studylife repo's Flux GitOps pattern - this is a
+# temporary, hand-applied deployment for the week-long ms/image + RAM + filter-rate measurement
+# (see the S2 plan/PR #5), not a permanent production onboarding. Applied once by hand
+# (kubectl apply -f k8s/00-namespace.yaml), same bootstrap-only convention the sibling apps use
+# for their own Namespace/RBAC manifests.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unifiprotectdashboard
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: unifiprotectdashboard
+automountServiceAccountToken: false

@@ -1,0 +1,42 @@
+# Default-deny ingress baseline, egress stays open (this app calls out to the Protect console at
+# an arbitrary LAN IP - no fixed egress allowlist makes sense here). Same strategy as the sibling
+# apps' own network-policies files.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: unifiprotectdashboard
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: unifiprotectdashboard
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - {} # egress otherwise unrestricted - this policy only adds an explicit DNS allowance
+---
+# Lets the Gateway (NGF data plane, k8s/02-httproute.yaml) reach the pod.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-nginx-gateway-to-unifiprotectdashboard
+  namespace: unifiprotectdashboard
+spec:
+  podSelector: { matchLabels: { app: unifiprotectdashboard } }
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: nginx-gateway } }
+      ports:
+        - { protocol: TCP, port: 5003 }
