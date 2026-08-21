@@ -20,6 +20,15 @@ public class EventIngestionService : BackgroundService
     private static readonly TimeSpan MaxBackfillLookback = TimeSpan.FromHours(24);
     private static readonly TimeSpan MaxOpenEventDuration = TimeSpan.FromHours(1);
 
+    // Tracks backfill progress independently of the Events table. Deliberately NOT derived from
+    // "the latest event already in the DB" (the previous approach) - that breaks the moment a
+    // backfill request fails (auth not ready yet, network error) and a newer event then arrives
+    // via the live websocket path before the next cycle: the old bound would silently jump
+    // forward to that live event's timestamp, permanently losing whatever window the failed
+    // request never actually covered. This watermark only advances when a backfill request
+    // *succeeds*, so a failure just means "try the same window again next cycle".
+    private const string BackfillWatermarkKey = "EventBackfill:CompletedThroughUtc";
+
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
     private readonly DataDirectoryOptions _dataDirectory;
@@ -155,23 +164,33 @@ public class EventIngestionService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var protectService = scope.ServiceProvider.GetRequiredService<IUnifiProtectService>();
         var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+        var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
 
-        var earliestAllowed = DateTimeOffset.UtcNow - MaxBackfillLookback;
-        var latestKnown = await eventRepository.GetLatestEventStartAsync();
-        var start = latestKnown.HasValue ? new DateTimeOffset(latestKnown.Value, TimeSpan.Zero) : earliestAllowed;
-        if (start < earliestAllowed)
+        var watermark = await GetBackfillWatermarkAsync(settingsService);
+        var start = ComputeBackfillStart(watermark, DateTimeOffset.UtcNow, MaxBackfillLookback);
+
+        // Captured once: used both as the request's end bound and, on success, the new
+        // watermark - "confirmed full coverage up to this instant", independent of whether any
+        // events actually existed in the window.
+        var requestEnd = DateTimeOffset.UtcNow;
+
+        var events = await protectService.GetEventsAsync(start, requestEnd);
+        if (events == null)
         {
-            start = earliestAllowed;
+            _logger.LogWarning("Backfill request failed for the window since {Start} - will retry the same window next cycle", start);
+            return;
         }
 
-        var events = await protectService.GetEventsAsync(start, DateTimeOffset.UtcNow);
         _logger.LogInformation("Backfilling {Count} event(s) since {Start}", events.Count, start);
 
         foreach (var evt in events)
         {
             if (cancellationToken.IsCancellationRequested)
             {
-                break;
+                // Don't persist the watermark below - a cut-short run hasn't actually covered
+                // the full window, and every event already upserted this far is a harmless
+                // re-fetch away regardless (UpsertFromRestAsync is a full overwrite, idempotent).
+                return;
             }
 
             try
@@ -192,6 +211,24 @@ public class EventIngestionService : BackgroundService
                 _logger.LogWarning(ex, "Failed to backfill event {EventId}", evt.Id);
             }
         }
+
+        await settingsService.SetSettingAsync(BackfillWatermarkKey, requestEnd.ToString("O"));
+    }
+
+    /// <summary>Clamps the resume point to the configured lookback window - a fresh install (no watermark yet) starts from the lookback bound, same as a watermark that's fallen further behind than that (e.g. after extended downtime).</summary>
+    public static DateTimeOffset ComputeBackfillStart(DateTimeOffset? watermark, DateTimeOffset now, TimeSpan maxLookback)
+    {
+        var earliestAllowed = now - maxLookback;
+        var start = watermark ?? earliestAllowed;
+        return start < earliestAllowed ? earliestAllowed : start;
+    }
+
+    private static async Task<DateTimeOffset?> GetBackfillWatermarkAsync(ISettingsService settingsService)
+    {
+        var raw = await settingsService.GetSettingAsync(BackfillWatermarkKey);
+        return DateTimeOffset.TryParse(raw, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed)
+            ? parsed
+            : null;
     }
 
     private async Task BackfillThumbnailAsync(IUnifiProtectService protectService, IEventRepository eventRepository, string unifiEventId)
