@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.7.2...v1.8.0) (2026-08-21)
+
+
+### Features
+
+* **k8s:** make the app deployment Flux-managed ([b36ceba](https://github.com/lukislp/UnifiProtectDashboard/commit/b36ceba7ec8ca1690a28cea3feba77b74f6f5fd1))
+
+
+### Performance Improvements
+
+* **ci:** build arm64 natively instead of under QEMU emulation ([8daa0fa](https://github.com/lukislp/UnifiProtectDashboard/commit/8daa0fa8d563f0200b1a2a4e2df16baefbb22f80))
+
 ## [1.7.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.7.1...v1.7.2) (2026-08-21)
 
 
