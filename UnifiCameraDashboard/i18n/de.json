@@ -112,6 +112,7 @@
   "EventsEmptyTitle":               "Noch keine Ereignisse",
   "EventsEmptyDesc":                "Ereignisse erscheinen hier, sobald deine Kameras Bewegung oder andere Aktivität erkennen.",
   "EventsLoadMore":                 "Mehr laden",
+  "EventsAllLabels":                "Alle Labels",
   "EventsAllLoaded":                "Alle Ereignisse geladen",
   "EventsScore":                    "Score: {0}%",
   "EventsSystemEvent":              "System",

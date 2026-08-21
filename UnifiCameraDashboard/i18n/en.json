@@ -112,6 +112,7 @@
   "EventsEmptyTitle":               "No events yet",
   "EventsEmptyDesc":                "Events will appear here as your cameras detect motion and other activity.",
   "EventsLoadMore":                 "Load more",
+  "EventsAllLabels":                "All labels",
   "EventsAllLoaded":                "All events loaded",
   "EventsScore":                    "Score: {0}%",
   "EventsSystemEvent":              "System",
