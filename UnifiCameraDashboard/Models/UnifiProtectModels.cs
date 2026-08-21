@@ -143,3 +143,35 @@ public sealed record ProtectSessionInfo(
     System.Net.CookieContainer Cookies,
     string? AuthToken,
     string? CsrfToken);
+
+/// <summary>
+/// A full Protect event object as returned by the REST events list endpoint (used for backfill
+/// after startup/downtime). Unlike a websocket "update" action's data frame, which is a partial
+/// patch, every list item here is complete - safe to deserialize directly into this POCO.
+/// </summary>
+public class ProtectEventPayload
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("modelKey")]
+    public string ModelKey { get; set; } = string.Empty;
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+
+    [JsonPropertyName("start")]
+    public long Start { get; set; }
+
+    [JsonPropertyName("end")]
+    public long? End { get; set; }
+
+    [JsonPropertyName("score")]
+    public int? Score { get; set; }
+
+    [JsonPropertyName("smartDetectTypes")]
+    public List<string> SmartDetectTypes { get; set; } = new();
+
+    [JsonPropertyName("camera")]
+    public string? Camera { get; set; }
+}
