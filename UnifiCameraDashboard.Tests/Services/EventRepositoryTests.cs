@@ -211,6 +211,45 @@ public class EventRepositoryTests
         Assert.False(needsThumbnail);
     }
 
+    [Fact]
+    public async Task GetUnclassifiedThumbnailedEventsAsync_ReturnsOnlyEventsWithThumbnailButNoClassification()
+    {
+        await using var db = await TestDb.CreateAsync();
+        var repository = new EventRepository(db.Context, NullLogger<EventRepository>.Instance);
+        db.Context.Events.AddRange(
+            new StoredEvent
+            {
+                UnifiEventId = "no-thumbnail",
+                Type = "motion",
+                CameraUnifiId = "cam-1",
+                ThumbnailPath = null,
+                Start = DateTime.UtcNow,
+            },
+            new StoredEvent
+            {
+                UnifiEventId = "already-classified",
+                Type = "motion",
+                CameraUnifiId = "cam-1",
+                ThumbnailPath = "/data/thumbnails/already-classified.jpg",
+                YoloClassifiedAt = DateTime.UtcNow,
+                Start = DateTime.UtcNow,
+            },
+            new StoredEvent
+            {
+                UnifiEventId = "dropped-before-classification",
+                Type = "motion",
+                CameraUnifiId = "cam-1",
+                ThumbnailPath = "/data/thumbnails/dropped-before-classification.jpg",
+                Start = DateTime.UtcNow,
+            });
+        await db.Context.SaveChangesAsync();
+
+        var pending = await repository.GetUnclassifiedThumbnailedEventsAsync();
+
+        var pendingId = Assert.Single(pending);
+        Assert.Equal("dropped-before-classification", pendingId.UnifiEventId);
+    }
+
     private static JsonElement ParseJson(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
     private sealed class TestDb : IAsyncDisposable
