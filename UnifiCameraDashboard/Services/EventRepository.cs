@@ -22,6 +22,7 @@ public interface IEventRepository
     Task<int> UpsertFromRestAsync(ProtectEventPayload payload);
 
     Task SetThumbnailPathAsync(string unifiEventId, string thumbnailPath);
+    Task<StoredEvent?> GetByUnifiEventIdAsync(string unifiEventId);
     Task<List<StoredEvent>> GetRecentEventsAsync(int skip, int take, string? cameraId = null, string? type = null);
     Task<DateTime?> GetLatestEventStartAsync();
 
@@ -119,6 +120,19 @@ public class EventRepository : IEventRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving thumbnail path for event {UnifiEventId}", unifiEventId);
+        }
+    }
+
+    public async Task<StoredEvent?> GetByUnifiEventIdAsync(string unifiEventId)
+    {
+        try
+        {
+            return await _context.Events.FirstOrDefaultAsync(e => e.UnifiEventId == unifiEventId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving event {UnifiEventId}", unifiEventId);
+            return null;
         }
     }
 
