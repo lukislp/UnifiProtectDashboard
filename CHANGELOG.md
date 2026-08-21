@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.7.0...v1.7.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **classification:** recover events dropped before the queue was unbounded ([1ae52dc](https://github.com/lukislp/UnifiProtectDashboard/commit/1ae52dc148ceea50de0bb125a1a3bfd1af0f71d2))
+
 # [1.7.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.6.2...v1.7.0) (2026-08-21)
 
 
