@@ -22,6 +22,7 @@ Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 
 builder.Services.AddDbContext<DashboardDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
+builder.Services.AddSingleton(new DataDirectoryOptions(dataDir));
 
 // Register HttpClientFactory for better cookie handling
 builder.Services.AddHttpClient();
@@ -37,10 +38,12 @@ builder.Services.AddScoped<ICameraRepository, CameraRepository>();
 builder.Services.AddScoped<IUnifiProtectService, UnifiProtectService>();
 builder.Services.AddScoped<IUnifiCameraService, UnifiCameraService>();
 builder.Services.AddScoped<IProtectWebSocketClient, ProtectWebSocketClient>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddSingleton<IFfmpegService, FfmpegService>();
 
 // Register Background Services
 builder.Services.AddHostedService<CameraAutoDiscoveryService>();
+builder.Services.AddHostedService<EventIngestionService>();
 
 // Add Controllers for API endpoints
 builder.Services.AddControllers();
