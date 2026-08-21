@@ -1,3 +1,11 @@
+# [1.6.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.5.0...v1.6.0) (2026-08-21)
+
+
+### Features
+
+* **k8s:** add HTTPRoute, network policies, and namespace ServiceAccount ([e9b4f72](https://github.com/lukislp/UnifiProtectDashboard/commit/e9b4f72ed5e75309e038020278dc18ef818cd67e))
+* **k8s:** add temporary manifests for the S2 measurement deployment ([49e6486](https://github.com/lukislp/UnifiProtectDashboard/commit/49e648655ce12cb7683604a84b5e5b8698689aae)), closes [#5](https://github.com/lukislp/UnifiProtectDashboard/issues/5)
+
 # [1.5.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.4.0...v1.5.0) (2026-08-21)
 
 
