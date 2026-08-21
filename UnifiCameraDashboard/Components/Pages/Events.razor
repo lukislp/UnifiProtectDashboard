@@ -1,0 +1,258 @@
+@page "/events"
+@rendermode InteractiveServer
+@inherits LocalizedSetupCheckBase
+@using UnifiCameraDashboard.Data
+@using UnifiCameraDashboard.Services
+@inject IEventRepository EventRepository
+@inject ICameraRepository CameraRepository
+
+<PageTitle>@I18n.Get("EventsTitle")</PageTitle>
+
+<div class="events-page">
+    <div class="events-header">
+        <h2>
+            <i class="bi bi-clock-history"></i>
+            @I18n.Get("EventsTitle")
+        </h2>
+        <a href="/" class="btn btn-sm btn-outline-light">
+            <i class="bi bi-house"></i>
+            @I18n.Get("BackToDashboard")
+        </a>
+    </div>
+
+    @if (_isLoading && !_events.Any())
+    {
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">@I18n.Get("EventsLoading")</span>
+            </div>
+            <p>@I18n.Get("EventsLoading")</p>
+        </div>
+    }
+    else if (!_events.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <h3>@I18n.Get("EventsEmptyTitle")</h3>
+            <p>@I18n.Get("EventsEmptyDesc")</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var day in _events.GroupBy(e => e.Start.ToLocalTime().Date).OrderByDescending(g => g.Key))
+        {
+            <h5 class="events-day-header">@day.Key.ToString("dddd, dd.MM.yyyy")</h5>
+            <div class="events-list">
+                @foreach (var evt in day.OrderByDescending(e => e.Start))
+                {
+                    <div class="event-row" @key="evt.Id">
+                        <div class="event-thumbnail">
+                            @if (evt.ThumbnailPath != null)
+                            {
+                                <img src="/api/events/@evt.UnifiEventId/thumbnail" alt="@GetCameraName(evt.CameraUnifiId)" />
+                            }
+                            else
+                            {
+                                <div class="event-thumbnail-placeholder"><i class="bi bi-camera-video"></i></div>
+                            }
+                        </div>
+                        <div class="event-details">
+                            <div class="event-title">
+                                <span class="badge bg-@GetTypeBadgeClass(evt.Type)">@GetTypeLabel(evt.Type)</span>
+                                @foreach (var tag in SplitTags(evt.SmartDetectTypes))
+                                {
+                                    <span class="badge bg-secondary ms-1">@tag</span>
+                                }
+                                <strong class="ms-2">@GetCameraName(evt.CameraUnifiId)</strong>
+                            </div>
+                            <div class="event-meta text-muted">
+                                @evt.Start.ToLocalTime().ToString("HH:mm:ss")
+                                @if (evt.End.HasValue)
+                                {
+                                    <text> &ndash; @evt.End.Value.ToLocalTime().ToString("HH:mm:ss") (@FormatDuration(evt.Start, evt.End.Value))</text>
+                                }
+                                @if (evt.Score.HasValue)
+                                {
+                                    <span class="ms-2">@I18n.Format("EventsScore", evt.Score.Value)</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="text-center mt-3 mb-4">
+            @if (_hasMore)
+            {
+                <button class="btn btn-outline-light" @onclick="LoadMore" disabled="@_isLoading">
+                    @if (_isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    @I18n.Get("EventsLoadMore")
+                </button>
+            }
+            else
+            {
+                <p class="text-muted">@I18n.Get("EventsAllLoaded")</p>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .events-page {
+        padding: 2rem;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .events-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .events-header h2 {
+        color: var(--text-primary, #fff);
+        margin: 0;
+    }
+
+    .events-day-header {
+        color: var(--text-primary, #fff);
+        opacity: 0.7;
+        margin: 1.5rem 0 0.75rem;
+        text-transform: capitalize;
+    }
+
+    .events-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .event-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        background: var(--tile-bg, #1e2336);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem;
+    }
+
+    .event-thumbnail {
+        flex: 0 0 auto;
+        width: 96px;
+        height: 54px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #000;
+    }
+
+    .event-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .event-thumbnail-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 1.5rem;
+    }
+
+    .event-details {
+        color: var(--text-primary, #fff);
+        min-width: 0;
+    }
+
+    .event-title {
+        margin-bottom: 0.25rem;
+    }
+
+    .event-meta {
+        font-size: 0.85rem;
+    }
+</style>
+
+@code {
+    private const int PageSize = 30;
+
+    private List<StoredEvent> _events = new();
+    private Dictionary<string, string> _cameraNames = new();
+    private bool _isLoading = true;
+    private bool _hasMore = true;
+    private int _skip = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var cameras = await CameraRepository.GetAllCamerasAsync();
+        _cameraNames = cameras.ToDictionary(c => c.Id, c => c.Name);
+
+        await LoadMore();
+    }
+
+    private async Task LoadMore()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var page = await EventRepository.GetRecentEventsAsync(_skip, PageSize);
+            _events.AddRange(page);
+            _skip += page.Count;
+            _hasMore = page.Count == PageSize;
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetCameraName(string? cameraId)
+        => cameraId != null && _cameraNames.TryGetValue(cameraId, out var name) ? name : I18n.Get("EventsSystemEvent");
+
+    private static IEnumerable<string> SplitTags(string smartDetectTypes)
+        => string.IsNullOrEmpty(smartDetectTypes) ? [] : smartDetectTypes.Split(',');
+
+    private static string GetTypeBadgeClass(string type) => type switch
+    {
+        "motion" => "primary",
+        "smartDetectZone" => "success",
+        "ring" => "warning",
+        "smartAudioDetect" => "info",
+        _ => "secondary"
+    };
+
+    private string GetTypeLabel(string type) => type switch
+    {
+        "motion" => I18n.Get("EventsTypeMotion"),
+        "smartDetectZone" => I18n.Get("EventsTypeSmartDetect"),
+        "ring" => I18n.Get("EventsTypeRing"),
+        "smartAudioDetect" => I18n.Get("EventsTypeAudio"),
+        "access" => I18n.Get("EventsTypeAccess"),
+        "disconnect" => I18n.Get("EventsTypeDisconnect"),
+        "cameraConnected" => I18n.Get("EventsTypeCameraConnected"),
+        "deviceAdopted" => I18n.Get("EventsTypeDeviceAdopted"),
+        _ => type
+    };
+
+    private static string FormatDuration(DateTime start, DateTime end)
+    {
+        var duration = end - start;
+        return duration.TotalMinutes >= 1
+            ? $"{(int)duration.TotalMinutes}m {duration.Seconds}s"
+            : $"{duration.Seconds}s";
+    }
+}
