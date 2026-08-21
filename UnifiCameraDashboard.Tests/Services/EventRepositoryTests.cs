@@ -92,7 +92,7 @@ public class EventRepositoryTests
             SmartDetectTypes = ["person"],
         });
 
-        var id = await repository.UpsertFromRestAsync(new ProtectEventPayload
+        var (id, needsThumbnail) = await repository.UpsertFromRestAsync(new ProtectEventPayload
         {
             Id = "evt-4",
             Type = "smartDetectZone",
@@ -102,6 +102,8 @@ public class EventRepositoryTests
             End = 1700000010000,
             SmartDetectTypes = ["vehicle", "package"],
         });
+
+        Assert.True(needsThumbnail);
 
         var stored = await db.Context.Events.SingleAsync(e => e.Id == id);
         Assert.Equal("smartDetectZone", stored.Type);
@@ -144,6 +146,69 @@ public class EventRepositoryTests
         var results = await repository.GetRecentEventsAsync(skip: 0, take: 10, cameraId: "cam-1");
 
         Assert.Equal(["e2", "e1"], results.Select(e => e.UnifiEventId));
+    }
+
+    [Fact]
+    public async Task GetRecentEventsAsync_FiltersByYoloLabel()
+    {
+        await using var db = await TestDb.CreateAsync();
+        var repository = new EventRepository(db.Context, NullLogger<EventRepository>.Instance);
+
+        db.Context.Events.AddRange(
+            new StoredEvent { UnifiEventId = "e1", Type = "motion", YoloLabels = "car,truck", Start = DateTime.UtcNow.AddMinutes(-2) },
+            new StoredEvent { UnifiEventId = "e2", Type = "motion", YoloLabels = "person", Start = DateTime.UtcNow.AddMinutes(-1) });
+        await db.Context.SaveChangesAsync();
+
+        var results = await repository.GetRecentEventsAsync(skip: 0, take: 10, yoloLabel: "car");
+
+        var only = Assert.Single(results);
+        Assert.Equal("e1", only.UnifiEventId);
+    }
+
+    [Fact]
+    public async Task SetYoloLabelsAsync_StoresLabelsAndTimestamp_EmptyListIsAMeaningfulResult()
+    {
+        await using var db = await TestDb.CreateAsync();
+        var repository = new EventRepository(db.Context, NullLogger<EventRepository>.Instance);
+        db.Context.Events.Add(new StoredEvent { UnifiEventId = "evt-5", Type = "motion", Start = DateTime.UtcNow });
+        await db.Context.SaveChangesAsync();
+
+        await repository.SetYoloLabelsAsync("evt-5", ["person", "car"]);
+        var withLabels = await db.Context.Events.SingleAsync(e => e.UnifiEventId == "evt-5");
+        Assert.Equal("person,car", withLabels.YoloLabels);
+        Assert.NotNull(withLabels.YoloClassifiedAt);
+
+        // Classifying again with nothing detected must NOT look like "not yet classified".
+        await repository.SetYoloLabelsAsync("evt-5", []);
+        var reclassified = await db.Context.Events.SingleAsync(e => e.UnifiEventId == "evt-5");
+        Assert.Equal(string.Empty, reclassified.YoloLabels);
+        Assert.NotNull(reclassified.YoloClassifiedAt);
+    }
+
+    [Fact]
+    public async Task UpsertFromRestAsync_EventAlreadyHasThumbnail_NeedsThumbnailIsFalse()
+    {
+        await using var db = await TestDb.CreateAsync();
+        var repository = new EventRepository(db.Context, NullLogger<EventRepository>.Instance);
+        db.Context.Events.Add(new StoredEvent
+        {
+            UnifiEventId = "evt-6",
+            Type = "motion",
+            CameraUnifiId = "cam-1",
+            ThumbnailPath = "/data/thumbnails/evt-6.jpg",
+            Start = DateTime.UtcNow,
+        });
+        await db.Context.SaveChangesAsync();
+
+        var (_, needsThumbnail) = await repository.UpsertFromRestAsync(new ProtectEventPayload
+        {
+            Id = "evt-6",
+            Type = "motion",
+            Camera = "cam-1",
+            Start = 1700000000000,
+        });
+
+        Assert.False(needsThumbnail);
     }
 
     private static JsonElement ParseJson(string json) => JsonDocument.Parse(json).RootElement.Clone();
