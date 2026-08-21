@@ -64,7 +64,7 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        dbContext.Database.EnsureCreated();
+        await dbContext.MigrateSafelyAsync();
         logger.LogInformation("Database initialized: {DbPath}", dbPath);
     }
     catch (Exception ex)
