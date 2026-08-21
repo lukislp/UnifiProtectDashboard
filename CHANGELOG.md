@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.1.0...v1.2.0) (2026-08-21)
+
+
+### Features
+
+* **protect:** decode the UniFi Protect realtime updates websocket protocol ([76b53ff](https://github.com/lukislp/UnifiProtectDashboard/commit/76b53ffd0cfc2dccb151a287fce7e51774370a37))
+
 # [1.1.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.3...v1.1.0) (2026-08-21)
 
 
