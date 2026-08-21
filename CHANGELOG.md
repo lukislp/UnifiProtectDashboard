@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.6.1...v1.6.2) (2026-08-21)
+
+
+### Bug Fixes
+
+* **k8s:** bump S2 measurement deployment to 1.6.1 ([06636d6](https://github.com/lukislp/UnifiProtectDashboard/commit/06636d6b3a0fa278a1b13596cd8b4d038697da16)), closes [#7](https://github.com/lukislp/UnifiProtectDashboard/issues/7)
+
 ## [1.6.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.6.0...v1.6.1) (2026-08-21)
 
 
