@@ -13,5 +13,8 @@
   },
   "EventIngestion": {
     "Enabled": true
+  },
+  "EventClassification": {
+    "Enabled": true
   }
 }

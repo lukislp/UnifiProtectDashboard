@@ -211,6 +211,10 @@ secrets.json
 **/Tools/ffmpeg/ffprobe.exe
 !**/Tools/ffmpeg/README.md
 
+# YOLO ONNX model (large, download separately - see Tools/yolo/README.md)
+**/Tools/yolo/*.onnx
+!**/Tools/yolo/README.md
+
 # Local deployment scripts (may contain credentials)
 deploy-local.ps1
 deploy-local.sh

@@ -14,6 +14,8 @@ A self-hosted Blazor Server dashboard for [UniFi Protect](https://ui.com/camera-
 - **Snapshot mode** — auto-refreshing JPEG previews proxied through the server (the browser never touches the UniFi Protect API directly)
 - **HLS live streaming** — low-latency H.264 streams via FFmpeg + hls.js
 - **Camera discovery** — scans the UniFi Protect console and persists cameras to a local SQLite database
+- **Event history** — ingests motion/smart-detect events in realtime via Protect's websocket, with REST backfill for anything missed, thumbnails, and a chronological events page
+- **Event classification** — each event thumbnail is run through a local YOLO11n model (ONNX, CPU) to label what's actually in it (person, car, ...), with a day/night-adaptive confidence threshold since IR night footage is a real accuracy gap for daytime-trained models — filterable in the events page
 - **Setup wizard** — guided first-run configuration (console URL, credentials)
 - **i18n** — UI language follows the browser locale; English and German included; add more by dropping a JSON file into `i18n/`
 - **Docker-first** — single `docker compose up -d` to run; data persisted in a named volume
@@ -23,8 +25,10 @@ A self-hosted Blazor Server dashboard for [UniFi Protect](https://ui.com/camera-
 | Layer | Technology |
 |---|---|
 | Framework | .NET 10, Blazor Server (InteractiveServer render mode) |
-| Database | SQLite via EF Core (`EnsureCreatedAsync` — no migrations) |
+| Database | SQLite via EF Core Migrations |
 | Video | FFmpeg + hls.js |
+| Realtime events | Protect's unofficial websocket updates protocol (reverse-engineered, no official spec) + REST backfill |
+| Classification | YOLO11n via ONNX Runtime (CPU), SkiaSharp for image decode/resize |
 | Auth | UniFi Protect cookie + Bearer token session, shared across all scoped service instances via static state |
 | i18n | Singleton `TranslationStore` (JSON files) + scoped `I18nService` per circuit |
 
@@ -151,6 +155,8 @@ Drop a new file into `i18n/`:
 | `GET` | `/api/stream/mjpeg/{cameraId}` | MJPEG stream (multipart) |
 | `GET` | `/api/cameras` | All persisted cameras (JSON) |
 | `POST` | `/api/discovery/start` | Trigger camera discovery |
+| `GET` | `/api/events` | Event list, filterable by `cameraId`/`type`/`label` |
+| `GET` | `/api/events/{id}/thumbnail` | Auth-proxied event thumbnail JPEG |
 | `GET` | `/api/ping` | Health check |
 
 ## Troubleshooting
@@ -162,6 +168,10 @@ Drop a new file into `i18n/`:
 **Language not switching** — `LanguageProvider` runs JS interop after the SignalR circuit connects, so there is a brief SSR-phase render in the Accept-Language before the browser locale is applied. Both paths fall back to `en` if no matching translation file exists.
 
 **Database error on startup** — the process needs write access to the directory pointed to by `DATA_DIR`.
+
+## Licenses & Attribution
+
+Event classification uses [Ultralytics YOLO11n](https://docs.ultralytics.com/models/yolo11/), licensed under **AGPL-3.0**. The exported ONNX model is downloaded at build/setup time (not committed — see `UnifiCameraDashboard/Tools/yolo/README.md`); this application's own use of it is as a self-hosted, single-user tool, not resold or offered as a network service to third parties. Image decoding/resizing uses [SkiaSharp](https://github.com/mono/SkiaSharp) (MIT).
 
 ## Disclaimer
 

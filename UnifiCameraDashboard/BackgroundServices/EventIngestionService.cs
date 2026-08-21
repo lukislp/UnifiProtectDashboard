@@ -23,17 +23,20 @@ public class EventIngestionService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
     private readonly DataDirectoryOptions _dataDirectory;
+    private readonly IClassificationQueue _classificationQueue;
     private readonly ILogger<EventIngestionService> _logger;
 
     public EventIngestionService(
         IServiceProvider serviceProvider,
         IConfiguration configuration,
         DataDirectoryOptions dataDirectory,
+        IClassificationQueue classificationQueue,
         ILogger<EventIngestionService> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
         _dataDirectory = dataDirectory;
+        _classificationQueue = classificationQueue;
         _logger = logger;
     }
 
@@ -121,6 +124,7 @@ public class EventIngestionService : BackgroundService
             await File.WriteAllBytesAsync(path, snapshot.Value.Data);
 
             await eventRepository.SetThumbnailPathAsync(unifiEventId, path);
+            _classificationQueue.TryEnqueue(new ClassificationRequest(unifiEventId, snapshot.Value.Data));
         }
         catch (Exception ex)
         {
@@ -172,12 +176,45 @@ public class EventIngestionService : BackgroundService
 
             try
             {
-                await eventRepository.UpsertFromRestAsync(evt);
+                var (_, needsThumbnail) = await eventRepository.UpsertFromRestAsync(evt);
+                if (needsThumbnail)
+                {
+                    // Deliberately sequential (no concurrency added here) - this can catch up
+                    // hundreds of historical events on first deploy, and both Protect (many
+                    // requests in a burst) and the classification queue (bounded, single
+                    // consumer) are better served by pacing this the same way the rest of this
+                    // loop already does, one event at a time.
+                    await BackfillThumbnailAsync(protectService, eventRepository, evt.Id);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to backfill event {EventId}", evt.Id);
             }
+        }
+    }
+
+    private async Task BackfillThumbnailAsync(IUnifiProtectService protectService, IEventRepository eventRepository, string unifiEventId)
+    {
+        try
+        {
+            var bytes = await protectService.GetEventThumbnailAsync(unifiEventId, width: 640, height: 360);
+            if (bytes == null)
+            {
+                return;
+            }
+
+            var thumbnailDir = Path.Combine(_dataDirectory.Path, "thumbnails");
+            Directory.CreateDirectory(thumbnailDir);
+            var path = Path.Combine(thumbnailDir, $"{unifiEventId}.jpg");
+            await File.WriteAllBytesAsync(path, bytes);
+
+            await eventRepository.SetThumbnailPathAsync(unifiEventId, path);
+            _classificationQueue.TryEnqueue(new ClassificationRequest(unifiEventId, bytes));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to backfill thumbnail for event {EventId}", unifiEventId);
         }
     }
 

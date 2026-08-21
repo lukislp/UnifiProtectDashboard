@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using UnifiCameraDashboard.Components;
 using UnifiCameraDashboard.Data;
 using UnifiCameraDashboard.Services;
+using UnifiCameraDashboard.Services.Classification;
 using UnifiCameraDashboard.Services.Protect;
 using UnifiCameraDashboard.BackgroundServices;
 
@@ -40,10 +41,18 @@ builder.Services.AddScoped<IUnifiCameraService, UnifiCameraService>();
 builder.Services.AddScoped<IProtectWebSocketClient, ProtectWebSocketClient>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddSingleton<IFfmpegService, FfmpegService>();
+// The ONNX model is loaded once here - expensive, and the model is stateless/reusable, so a
+// singleton rather than resolving it per classification.
+builder.Services.AddSingleton<IYoloClassifier>(_ => new YoloClassifier(YoloClassifier.ResolveModelPath()));
 
 // Register Background Services
 builder.Services.AddHostedService<CameraAutoDiscoveryService>();
 builder.Services.AddHostedService<EventIngestionService>();
+// EventClassificationService is both a hosted service and injectable via IClassificationQueue -
+// registered once as a singleton so both resolve the same instance/channel.
+builder.Services.AddSingleton<EventClassificationService>();
+builder.Services.AddSingleton<IClassificationQueue>(sp => sp.GetRequiredService<EventClassificationService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<EventClassificationService>());
 
 // Add Controllers for API endpoints
 builder.Services.AddControllers();

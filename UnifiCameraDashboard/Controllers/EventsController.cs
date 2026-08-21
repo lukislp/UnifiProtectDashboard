@@ -24,14 +24,14 @@ public class EventsController : ControllerBase
     /// Chronological event list (newest first), optionally filtered by camera and/or type.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> GetEvents([FromQuery] int skip = 0, [FromQuery] int take = 50, [FromQuery] string? cameraId = null, [FromQuery] string? type = null)
+    public async Task<IActionResult> GetEvents([FromQuery] int skip = 0, [FromQuery] int take = 50, [FromQuery] string? cameraId = null, [FromQuery] string? type = null, [FromQuery] string? label = null)
     {
         try
         {
             skip = Math.Max(skip, 0);
             take = Math.Clamp(take, 1, MaxTake);
 
-            var events = await _eventRepository.GetRecentEventsAsync(skip, take, cameraId, type);
+            var events = await _eventRepository.GetRecentEventsAsync(skip, take, cameraId, type, label);
             var cameraNames = (await _cameraRepository.GetAllCamerasAsync()).ToDictionary(c => c.Id, c => c.Name);
 
             var dto = events.Select(e => new
@@ -41,6 +41,7 @@ public class EventsController : ControllerBase
                 cameraName = e.CameraUnifiId != null && cameraNames.TryGetValue(e.CameraUnifiId, out var name) ? name : null,
                 type = e.Type,
                 smartDetectTypes = string.IsNullOrEmpty(e.SmartDetectTypes) ? [] : e.SmartDetectTypes.Split(','),
+                yoloLabels = string.IsNullOrEmpty(e.YoloLabels) ? [] : e.YoloLabels.Split(','),
                 score = e.Score,
                 start = e.Start,
                 end = e.End,

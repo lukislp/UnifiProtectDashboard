@@ -48,6 +48,7 @@ public class DashboardDbContext : DbContext
             entity.Property(e => e.Type).IsRequired().HasMaxLength(64);
             entity.Property(e => e.SmartDetectTypes).IsRequired().HasMaxLength(200);
             entity.Property(e => e.ThumbnailPath).HasMaxLength(500);
+            entity.Property(e => e.YoloLabels).IsRequired().HasMaxLength(200);
         });
     }
 }
@@ -94,6 +95,12 @@ public class StoredEvent
     public DateTime Start { get; set; }
     public DateTime? End { get; set; }
     public string? ThumbnailPath { get; set; }
+    // Comma-separated COCO labels from YOLO classification (e.g. "person,car"), same convention
+    // as SmartDetectTypes. Empty until classified (see YoloClassifiedAt); stays empty if the
+    // model found nothing above its confidence threshold - that's a real, meaningful result
+    // (the "filter rate" signal), not the same as "not yet classified".
+    public string YoloLabels { get; set; } = string.Empty;
+    public DateTime? YoloClassifiedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

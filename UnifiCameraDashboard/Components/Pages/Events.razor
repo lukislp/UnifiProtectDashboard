@@ -14,10 +14,22 @@
             <i class="bi bi-clock-history"></i>
             @I18n.Get("EventsTitle")
         </h2>
-        <a href="/" class="btn btn-sm btn-outline-light">
-            <i class="bi bi-house"></i>
-            @I18n.Get("BackToDashboard")
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            @if (_knownLabels.Count > 0)
+            {
+                <select class="form-select form-select-sm" style="width: auto;" @bind="_selectedLabel" @bind:after="OnFilterChangedAsync">
+                    <option value="">@I18n.Get("EventsAllLabels")</option>
+                    @foreach (var label in _knownLabels.OrderBy(l => l))
+                    {
+                        <option value="@label">@label</option>
+                    }
+                </select>
+            }
+            <a href="/" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-house"></i>
+                @I18n.Get("BackToDashboard")
+            </a>
+        </div>
     </div>
 
     @if (_isLoading && !_events.Any())
@@ -62,6 +74,10 @@
                                 @foreach (var tag in SplitTags(evt.SmartDetectTypes))
                                 {
                                     <span class="badge bg-secondary ms-1">@tag</span>
+                                }
+                                @foreach (var label in SplitTags(evt.YoloLabels))
+                                {
+                                    <span class="badge bg-info text-dark ms-1">@label</span>
                                 }
                                 <strong class="ms-2">@GetCameraName(evt.CameraUnifiId)</strong>
                             </div>
@@ -187,6 +203,8 @@
 
     private List<StoredEvent> _events = new();
     private Dictionary<string, string> _cameraNames = new();
+    private HashSet<string> _knownLabels = new();
+    private string _selectedLabel = "";
     private bool _isLoading = true;
     private bool _hasMore = true;
     private int _skip = 0;
@@ -208,16 +226,33 @@
 
         try
         {
-            var page = await EventRepository.GetRecentEventsAsync(_skip, PageSize);
+            var yoloLabel = string.IsNullOrEmpty(_selectedLabel) ? null : _selectedLabel;
+            var page = await EventRepository.GetRecentEventsAsync(_skip, PageSize, yoloLabel: yoloLabel);
             _events.AddRange(page);
             _skip += page.Count;
             _hasMore = page.Count == PageSize;
+
+            foreach (var evt in page)
+            {
+                foreach (var label in SplitTags(evt.YoloLabels))
+                {
+                    _knownLabels.Add(label);
+                }
+            }
         }
         finally
         {
             _isLoading = false;
             StateHasChanged();
         }
+    }
+
+    private async Task OnFilterChangedAsync()
+    {
+        _events.Clear();
+        _skip = 0;
+        _hasMore = true;
+        await LoadMore();
     }
 
     private string GetCameraName(string? cameraId)
