@@ -1,11 +1,14 @@
-# Temporary S2 measurement deployment - pinned to pinode02 (the real 8GB Pi with headroom;
-# pinode01 is the control-plane node, already tight on memory). No Kubernetes Secret for Protect
-# credentials: the app stores them itself, AES-encrypted in its own SQLite DB, entered once via
-# the Setup wizard (same as every local test this whole project went through) - so first-time
-# setup here is: kubectl port-forward, open the wizard once, done.
+# S2 measurement deployment - pinned to pinode02 (the real 8GB Pi with headroom; pinode01 is the
+# control-plane node, already tight on memory). No Kubernetes Secret for Protect credentials: the
+# app stores them itself, AES-encrypted in its own SQLite DB, entered once via the Setup wizard
+# (same as every local test this whole project went through) - so first-time setup here is:
+# kubectl port-forward, open the wizard once, done.
 #
-# Not wired into the central studylife repo's Flux GitOps pattern - applied by hand
-# (kubectl apply -f k8s/) for the measurement week, not a permanent production onboarding.
+# This file is Flux-managed via k8s/flux-deploy/kustomization.yaml, which applies exactly this
+# file - the studylife repo's k8s/flux/21-25-unifiprotectdashboard-*.yaml watch GHCR for new tags
+# and auto-bump the $imagepolicy-marked image line below. The Namespace/HTTPRoute/NetworkPolicy
+# files in this same k8s/ folder stay bootstrap-only (applied once by hand), same split as
+# studylife-mcp/piwatch - see k8s/flux-deploy/kustomization.yaml for why.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -39,8 +42,9 @@ spec:
         kubernetes.io/hostname: pinode02
       containers:
         - name: unifiprotectdashboard
-          # Not Flux-managed - bump this by hand for a future redeploy, no $imagepolicy marker.
-          image: ghcr.io/lukislp/unifiprotectdashboard:1.7.1
+          # Flux-managed (see k8s/flux-deploy/) - the studylife repo's ImageUpdateAutomation
+          # bumps this tag automatically on every new GHCR release, matched via this marker.
+          image: ghcr.io/lukislp/unifiprotectdashboard:1.7.1 # {"$imagepolicy": "flux-system:unifiprotectdashboard"}
           env:
             - name: DATA_DIR
               value: /data
