@@ -30,7 +30,6 @@ public interface IEventRepository
 
     Task<StoredEvent?> GetByUnifiEventIdAsync(string unifiEventId);
     Task<List<StoredEvent>> GetRecentEventsAsync(int skip, int take, string? cameraId = null, string? type = null, string? yoloLabel = null);
-    Task<DateTime?> GetLatestEventStartAsync();
 
     /// <summary>
     /// Marks events that never received an "end" update (e.g. after a crash mid-event) as
@@ -195,19 +194,6 @@ public class EventRepository : IEventRepository
         {
             _logger.LogError(ex, "Error retrieving recent events");
             return new List<StoredEvent>();
-        }
-    }
-
-    public async Task<DateTime?> GetLatestEventStartAsync()
-    {
-        try
-        {
-            return await _context.Events.MaxAsync(e => (DateTime?)e.Start);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving latest event start time");
-            return null;
         }
     }
 

@@ -26,10 +26,12 @@ public interface IUnifiProtectService
 
     /// <summary>
     /// Lists events in the given time range via the REST events endpoint - used to backfill
-    /// events missed while the realtime websocket was disconnected. Returns an empty list (not
-    /// null) on any failure, matching this service's existing style for read methods.
+    /// events missed while the realtime websocket was disconnected. Returns null on any failure
+    /// (auth not configured, network error, non-success response) - deliberately distinct from
+    /// an empty-but-successful list, since the caller (EventIngestionService's backfill loop)
+    /// needs to know whether it's safe to advance its own progress watermark past this window.
     /// </summary>
-    Task<List<ProtectEventPayload>> GetEventsAsync(DateTimeOffset start, DateTimeOffset end);
+    Task<List<ProtectEventPayload>?> GetEventsAsync(DateTimeOffset start, DateTimeOffset end);
 
     /// <summary>
     /// Fetches a saved thumbnail for a specific event - works for any event still within
@@ -480,13 +482,14 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
         }
     }
 
-    public async Task<List<ProtectEventPayload>> GetEventsAsync(DateTimeOffset start, DateTimeOffset end)
+    public async Task<List<ProtectEventPayload>?> GetEventsAsync(DateTimeOffset start, DateTimeOffset end)
     {
         try
         {
             if (!await EnsureAuthenticatedFromSettingsAsync() || _authenticatedClient == null)
             {
-                return new List<ProtectEventPayload>();
+                _logger.LogWarning("Cannot retrieve events: not authenticated");
+                return null;
             }
 
             if (!string.IsNullOrEmpty(_csrfToken))
@@ -502,7 +505,7 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
             {
                 var error = await response.Content.ReadAsStringAsync();
                 _logger.LogWarning("Error retrieving events: {Status} - {Error}", response.StatusCode, error);
-                return new List<ProtectEventPayload>();
+                return null;
             }
 
             var json = await response.Content.ReadAsStringAsync();
@@ -513,7 +516,7 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving events between {Start} and {End}", start, end);
-            return new List<ProtectEventPayload>();
+            return null;
         }
     }
 
