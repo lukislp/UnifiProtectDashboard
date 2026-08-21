@@ -29,6 +29,13 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 COPY --from=build /app/publish .
 
+# Download the YOLO event-classification model (large binary, not committed to git - matches the
+# ffmpeg treatment above; see Tools/yolo/README.md). Hosted as a GitHub Release asset on this repo
+# under a fixed "models" tag, deliberately not tied to this app's own semantic-release version
+# tags, so the URL never changes across releases.
+RUN mkdir -p Tools/yolo && \
+    curl -fsSL -o Tools/yolo/yolo11n.onnx https://github.com/lukislp/UnifiProtectDashboard/releases/download/models/yolo11n.onnx
+
 # Data directory for the SQLite database
 ENV DATA_DIR=/data
 ENV ASPNETCORE_URLS=http://+:5003
