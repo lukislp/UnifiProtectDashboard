@@ -17,13 +17,19 @@ public interface IEventRepository
 
     /// <summary>
     /// Applies a full event object from the REST backfill endpoint - unlike the websocket path,
-    /// every field is always present here, so it's a straight overwrite.
+    /// every field is always present here, so it's a straight overwrite. NeedsThumbnail is true
+    /// when this event is camera-scoped and doesn't have a thumbnail yet, saving the caller a
+    /// separate lookup to decide whether to backfill one.
     /// </summary>
-    Task<int> UpsertFromRestAsync(ProtectEventPayload payload);
+    Task<(int Id, bool NeedsThumbnail)> UpsertFromRestAsync(ProtectEventPayload payload);
 
     Task SetThumbnailPathAsync(string unifiEventId, string thumbnailPath);
+
+    /// <summary>Records YOLO classification results - an empty list is a real, meaningful outcome (nothing detected above threshold), not skipped.</summary>
+    Task SetYoloLabelsAsync(string unifiEventId, IReadOnlyList<string> labels);
+
     Task<StoredEvent?> GetByUnifiEventIdAsync(string unifiEventId);
-    Task<List<StoredEvent>> GetRecentEventsAsync(int skip, int take, string? cameraId = null, string? type = null);
+    Task<List<StoredEvent>> GetRecentEventsAsync(int skip, int take, string? cameraId = null, string? type = null, string? yoloLabel = null);
     Task<DateTime?> GetLatestEventStartAsync();
 
     /// <summary>
@@ -71,7 +77,7 @@ public class EventRepository : IEventRepository
         }
     }
 
-    public async Task<int> UpsertFromRestAsync(ProtectEventPayload payload)
+    public async Task<(int Id, bool NeedsThumbnail)> UpsertFromRestAsync(ProtectEventPayload payload)
     {
         try
         {
@@ -94,7 +100,9 @@ public class EventRepository : IEventRepository
             }
 
             await _context.SaveChangesAsync();
-            return entity.Id;
+
+            var needsThumbnail = entity.CameraUnifiId != null && entity.ThumbnailPath == null;
+            return (entity.Id, needsThumbnail);
         }
         catch (Exception ex)
         {
@@ -123,6 +131,27 @@ public class EventRepository : IEventRepository
         }
     }
 
+    public async Task SetYoloLabelsAsync(string unifiEventId, IReadOnlyList<string> labels)
+    {
+        try
+        {
+            var entity = await _context.Events.FirstOrDefaultAsync(e => e.UnifiEventId == unifiEventId);
+            if (entity == null)
+            {
+                return;
+            }
+
+            entity.YoloLabels = string.Join(",", labels);
+            entity.YoloClassifiedAt = DateTime.UtcNow;
+            entity.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving YOLO labels for event {UnifiEventId}", unifiEventId);
+        }
+    }
+
     public async Task<StoredEvent?> GetByUnifiEventIdAsync(string unifiEventId)
     {
         try
@@ -136,7 +165,7 @@ public class EventRepository : IEventRepository
         }
     }
 
-    public async Task<List<StoredEvent>> GetRecentEventsAsync(int skip, int take, string? cameraId = null, string? type = null)
+    public async Task<List<StoredEvent>> GetRecentEventsAsync(int skip, int take, string? cameraId = null, string? type = null, string? yoloLabel = null)
     {
         try
         {
@@ -149,6 +178,11 @@ public class EventRepository : IEventRepository
             if (!string.IsNullOrEmpty(type))
             {
                 query = query.Where(e => e.Type == type);
+            }
+            if (!string.IsNullOrEmpty(yoloLabel))
+            {
+                // CSV column, same simple-substring-match convention as SmartDetectTypes elsewhere.
+                query = query.Where(e => e.YoloLabels.Contains(yoloLabel));
             }
 
             return await query

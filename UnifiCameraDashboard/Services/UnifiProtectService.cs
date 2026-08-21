@@ -30,6 +30,14 @@ public interface IUnifiProtectService
     /// null) on any failure, matching this service's existing style for read methods.
     /// </summary>
     Task<List<ProtectEventPayload>> GetEventsAsync(DateTimeOffset start, DateTimeOffset end);
+
+    /// <summary>
+    /// Fetches a saved thumbnail for a specific event - works for any event still within
+    /// Protect's retention window (confirmed live: not just ones caught by the realtime
+    /// websocket), which is what makes retroactively backfilling thumbnails for older events
+    /// possible. Returns null on any failure.
+    /// </summary>
+    Task<byte[]?> GetEventThumbnailAsync(string eventId, int? width = null, int? height = null);
 }
 
 public class UnifiProtectService : IUnifiProtectService, IDisposable
@@ -506,6 +514,43 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
         {
             _logger.LogError(ex, "Error retrieving events between {Start} and {End}", start, end);
             return new List<ProtectEventPayload>();
+        }
+    }
+
+    public async Task<byte[]?> GetEventThumbnailAsync(string eventId, int? width = null, int? height = null)
+    {
+        try
+        {
+            if (!await EnsureAuthenticatedFromSettingsAsync() || _authenticatedClient == null)
+            {
+                return null;
+            }
+
+            var url = $"/proxy/protect/api/events/{eventId}/thumbnail";
+            if (width.HasValue || height.HasValue)
+            {
+                url += $"?w={width ?? 0}&h={height ?? 0}";
+            }
+
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (!string.IsNullOrEmpty(_csrfToken))
+            {
+                request.Headers.TryAddWithoutValidation("X-CSRF-Token", _csrfToken);
+            }
+
+            var response = await _authenticatedClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Error retrieving thumbnail for event {EventId}: {Status}", eventId, response.StatusCode);
+                return null;
+            }
+
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving thumbnail for event {EventId}", eventId);
+            return null;
         }
     }
 
