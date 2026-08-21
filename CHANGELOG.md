@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.8.1...v1.8.2) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ci:** re-trigger a release to measure the warm-cache arm64 build time ([492a362](https://github.com/lukislp/UnifiProtectDashboard/commit/492a362a77e10760de16902b46bb91fc2d4fff54))
+
 ## [1.8.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.8.0...v1.8.1) (2026-08-21)
 
 
