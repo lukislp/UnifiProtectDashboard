@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.6.2...v1.7.0) (2026-08-21)
+
+
+### Features
+
+* **classification:** make the classification queue unbounded ([d5ae248](https://github.com/lukislp/UnifiProtectDashboard/commit/d5ae248aa3f004b4ead4b1ed78d7893e3e2c365a))
+
 ## [1.6.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.6.1...v1.6.2) (2026-08-21)
 
 
