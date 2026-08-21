@@ -17,14 +17,14 @@ metadata:
 spec:
   accessModes: ["ReadWriteOnce"]
   resources:
-    requests: { storage: 2Gi }
+    requests: {storage: 2Gi}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: unifiprotectdashboard
   namespace: unifiprotectdashboard
-  labels: { app: unifiprotectdashboard }
+  labels: {app: unifiprotectdashboard}
 spec:
   replicas: 1
   strategy:
@@ -32,10 +32,10 @@ spec:
     # writers) - same reasoning as the sibling apps' own single-instance deployments.
     type: Recreate
   selector:
-    matchLabels: { app: unifiprotectdashboard }
+    matchLabels: {app: unifiprotectdashboard}
   template:
     metadata:
-      labels: { app: unifiprotectdashboard }
+      labels: {app: unifiprotectdashboard}
     spec:
       # Pinned to the real 8GB node this measurement is about - not left to the scheduler.
       nodeSelector:
@@ -44,7 +44,7 @@ spec:
         - name: unifiprotectdashboard
           # Flux-managed (see k8s/flux-deploy/) - the studylife repo's ImageUpdateAutomation
           # bumps this tag automatically on every new GHCR release, matched via this marker.
-          image: ghcr.io/lukislp/unifiprotectdashboard:1.7.1 # {"$imagepolicy": "flux-system:unifiprotectdashboard"}
+          image: ghcr.io/lukislp/unifiprotectdashboard:1.7.2 # {"$imagepolicy": "flux-system:unifiprotectdashboard"}
           env:
             - name: DATA_DIR
               value: /data
@@ -58,14 +58,14 @@ spec:
             # Conservative given pinode02 already runs other real workloads (~51% memory used at
             # last check) - IntraOpNumThreads is already capped to 2 in the classifier itself, so
             # this limit is a backstop, not the primary throttle.
-            requests: { cpu: 250m, memory: 512Mi }
-            limits: { cpu: 2000m, memory: 1536Mi }
+            requests: {cpu: 250m, memory: 512Mi}
+            limits: {cpu: 2000m, memory: 1536Mi}
           readinessProbe:
-            httpGet: { path: /api/ping, port: 5003 }
+            httpGet: {path: /api/ping, port: 5003}
             initialDelaySeconds: 15
             periodSeconds: 10
           livenessProbe:
-            httpGet: { path: /api/ping, port: 5003 }
+            httpGet: {path: /api/ping, port: 5003}
             initialDelaySeconds: 30
             periodSeconds: 15
           volumeMounts:
@@ -73,7 +73,7 @@ spec:
               mountPath: /data
       volumes:
         - name: data
-          persistentVolumeClaim: { claimName: unifiprotectdashboard-data }
+          persistentVolumeClaim: {claimName: unifiprotectdashboard-data}
 ---
 apiVersion: v1
 kind: Service
@@ -82,7 +82,7 @@ metadata:
   namespace: unifiprotectdashboard
 spec:
   type: ClusterIP
-  selector: { app: unifiprotectdashboard }
+  selector: {app: unifiprotectdashboard}
   ports:
     - port: 5003
       targetPort: 5003
