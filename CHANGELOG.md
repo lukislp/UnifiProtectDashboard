@@ -1,3 +1,12 @@
+# [1.5.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.4.0...v1.5.0) (2026-08-21)
+
+
+### Features
+
+* **classification:** add schema and repository support for YOLO labels ([f475b80](https://github.com/lukislp/UnifiProtectDashboard/commit/f475b80ad56c4f9d8411cbf8d514991674f2d133))
+* **classification:** add YOLO11n inference pipeline ([b13b3f1](https://github.com/lukislp/UnifiProtectDashboard/commit/b13b3f14041bf838ce98a403b7b8930cf925ef21))
+* **ui:** show and filter events by YOLO label ([b419b01](https://github.com/lukislp/UnifiProtectDashboard/commit/b419b01a24444d9972700a1f54bd44b453438480))
+
 # [1.4.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.3.0...v1.4.0) (2026-08-21)
 
 
