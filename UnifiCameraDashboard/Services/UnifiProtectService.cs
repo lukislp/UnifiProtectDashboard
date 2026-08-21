@@ -16,6 +16,13 @@ public interface IUnifiProtectService
     Task<(byte[] Data, string ContentType)?> GetSnapshotAsync(string cameraId, int? width = null, int? height = null);
     bool IsAuthenticated { get; }
     Task<string> GetAuthenticationDebugInfoAsync(string url, string username, string password);
+
+    /// <summary>
+    /// Ensures an authenticated session (using stored settings, authenticating if needed) and
+    /// hands back the session details needed to open the Protect realtime updates websocket
+    /// under the same session. Returns null if credentials aren't configured or auth fails.
+    /// </summary>
+    Task<ProtectSessionInfo?> GetSessionForWebSocketAsync();
 }
 
 public class UnifiProtectService : IUnifiProtectService, IDisposable
@@ -349,39 +356,68 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
         }
     }
 
+    // Lock-free inner implementation - must only be called while _authLock is held (or when
+    // IsAuthenticated is already known true, in which case it's a cheap no-op check).
+    private async Task<bool> EnsureAuthenticatedFromSettingsCoreAsync()
+    {
+        if (IsAuthenticated)
+        {
+            return true;
+        }
+
+        var url = await _settingsService.GetUnifiProtectUrlAsync();
+        var username = await _settingsService.GetUsernameAsync();
+        var password = await _settingsService.GetPasswordAsync();
+
+        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        {
+            _logger.LogError("Credentials not configured");
+            return false;
+        }
+
+        return await AuthenticateCoreAsync(url, username, password);
+    }
+
+    // Ensures an authenticated session using stored settings, authenticating (under the shared
+    // lock) only if not already authenticated. Used by every call site that needs a session but
+    // doesn't already hold a specific url/username/password to authenticate with directly.
+    private async Task<bool> EnsureAuthenticatedFromSettingsAsync()
+    {
+        if (IsAuthenticated)
+        {
+            return true;
+        }
+
+        await _authLock.WaitAsync();
+        try
+        {
+            return await EnsureAuthenticatedFromSettingsCoreAsync();
+        }
+        finally
+        {
+            _authLock.Release();
+        }
+    }
+
+    public async Task<ProtectSessionInfo?> GetSessionForWebSocketAsync()
+    {
+        if (!await EnsureAuthenticatedFromSettingsAsync())
+        {
+            return null;
+        }
+
+        return _currentBaseUrl == null
+            ? null
+            : new ProtectSessionInfo(_currentBaseUrl, _cookieContainer, _authToken, _csrfToken);
+    }
+
     public async Task<UnifiProtectBootstrapResponse?> GetBootstrapDataAsync()
     {
         try
         {
-            if (!IsAuthenticated)
+            if (!await EnsureAuthenticatedFromSettingsAsync())
             {
-                await _authLock.WaitAsync();
-                try
-                {
-                    if (!IsAuthenticated)
-                    {
-                        var url = await _settingsService.GetUnifiProtectUrlAsync();
-                        var username = await _settingsService.GetUsernameAsync();
-                        var password = await _settingsService.GetPasswordAsync();
-
-                        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
-                        {
-                            _logger.LogError("Credentials not configured");
-                            return null;
-                        }
-
-                        var authenticated = await AuthenticateCoreAsync(url, username, password);
-                        if (!authenticated)
-                        {
-                            _logger.LogError("Authentication failed");
-                            return null;
-                        }
-                    }
-                }
-                finally
-                {
-                    _authLock.Release();
-                }
+                return null;
             }
 
             if (_authenticatedClient == null)
@@ -519,34 +555,10 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
         {
             // Ensure we have a valid session; serialize auth to avoid races when
             // multiple cameras request snapshots simultaneously at startup.
-            if (!IsAuthenticated)
+            if (!await EnsureAuthenticatedFromSettingsAsync())
             {
-                await _authLock.WaitAsync();
-                try
-                {
-                    if (!IsAuthenticated) // double-check inside lock
-                    {
-                        var url = await _settingsService.GetUnifiProtectUrlAsync();
-                        var username = await _settingsService.GetUsernameAsync();
-                        var password = await _settingsService.GetPasswordAsync();
-
-                        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
-                        {
-                            _logger.LogError("Credentials not configured");
-                            return null;
-                        }
-
-                        if (!await AuthenticateCoreAsync(url, username, password))
-                        {
-                            _logger.LogError("Re-authentication failed, cannot load snapshot");
-                            return null;
-                        }
-                    }
-                }
-                finally
-                {
-                    _authLock.Release();
-                }
+                _logger.LogError("Re-authentication failed, cannot load snapshot");
+                return null;
             }
 
             // Build a per-request message to avoid mutating shared DefaultRequestHeaders concurrently

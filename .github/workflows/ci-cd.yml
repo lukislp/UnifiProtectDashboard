@@ -37,6 +37,7 @@ jobs:
             nuget-${{ runner.os }}-
       - run: dotnet restore UnifiCameraDashboard.sln
       - run: dotnet build UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+      - run: dotnet test UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-build
 
   test-lint:
     runs-on: ubuntu-latest

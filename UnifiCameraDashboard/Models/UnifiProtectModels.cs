@@ -133,3 +133,13 @@ public class UnifiAuthResponse
     [JsonPropertyName("refreshToken")]
     public string RefreshToken { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// The current authenticated session against a Protect console, handed out so other transports
+/// (e.g. the realtime updates websocket) can reuse it instead of authenticating separately.
+/// </summary>
+public sealed record ProtectSessionInfo(
+    string BaseUrl,
+    System.Net.CookieContainer Cookies,
+    string? AuthToken,
+    string? CsrfToken);

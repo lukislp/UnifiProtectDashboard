@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using UnifiCameraDashboard.Components;
 using UnifiCameraDashboard.Data;
 using UnifiCameraDashboard.Services;
+using UnifiCameraDashboard.Services.Protect;
 using UnifiCameraDashboard.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,6 +36,7 @@ builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<ICameraRepository, CameraRepository>();
 builder.Services.AddScoped<IUnifiProtectService, UnifiProtectService>();
 builder.Services.AddScoped<IUnifiCameraService, UnifiCameraService>();
+builder.Services.AddScoped<IProtectWebSocketClient, ProtectWebSocketClient>();
 builder.Services.AddSingleton<IFfmpegService, FfmpegService>();
 
 // Register Background Services
