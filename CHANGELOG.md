@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.6.0...v1.6.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **events:** stop backfill from silently skipping windows it never covered ([3aa20eb](https://github.com/lukislp/UnifiProtectDashboard/commit/3aa20ebb95ce7c274fa6c7c776e7278d8ae22012))
+
 # [1.6.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.5.0...v1.6.0) (2026-08-21)
 
 
