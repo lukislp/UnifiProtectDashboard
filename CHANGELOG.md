@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.2.0...v1.3.0) (2026-08-21)
+
+
+### Features
+
+* **events:** add event schema and repository ([2832cca](https://github.com/lukislp/UnifiProtectDashboard/commit/2832cca10b5deed54f7735c721e7ba415941775a))
+* **events:** ingest UniFi Protect events via the realtime websocket ([0df18fc](https://github.com/lukislp/UnifiProtectDashboard/commit/0df18fc9fe9e9697980d26465de2ace5dfa97209))
+
 # [1.2.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.1.0...v1.2.0) (2026-08-21)
 
 
