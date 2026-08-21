@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.3...v1.1.0) (2026-08-21)
+
+
+### Features
+
+* **db:** switch to EF Core migrations with legacy-database bootstrap ([11ba731](https://github.com/lukislp/UnifiProtectDashboard/commit/11ba731298bc3809ebcd615ea2ced5d5f2aee09c))
+
 ## [1.0.3](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.0.2...v1.0.3) (2026-08-07)
 
 
