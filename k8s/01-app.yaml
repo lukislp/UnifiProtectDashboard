@@ -40,7 +40,7 @@ spec:
       containers:
         - name: unifiprotectdashboard
           # Not Flux-managed - bump this by hand for a future redeploy, no $imagepolicy marker.
-          image: ghcr.io/lukislp/unifiprotectdashboard:1.5.0
+          image: ghcr.io/lukislp/unifiprotectdashboard:1.6.1
           env:
             - name: DATA_DIR
               value: /data
