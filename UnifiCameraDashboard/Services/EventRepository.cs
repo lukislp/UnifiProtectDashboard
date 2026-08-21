@@ -32,6 +32,14 @@ public interface IEventRepository
     Task<List<StoredEvent>> GetRecentEventsAsync(int skip, int take, string? cameraId = null, string? type = null, string? yoloLabel = null);
 
     /// <summary>
+    /// Events that already have a saved thumbnail but were never classified - the durable trace
+    /// of any classification request that didn't make it through (e.g. dropped by a since-fixed
+    /// bounded queue, or a pod restart mid-backlog). A periodic catch-up sweep re-enqueues these
+    /// so "classify everything, eventually" holds even across incidents like that.
+    /// </summary>
+    Task<List<StoredEvent>> GetUnclassifiedThumbnailedEventsAsync();
+
+    /// <summary>
     /// Marks events that never received an "end" update (e.g. after a crash mid-event) as
     /// closed, using their own start time as a duration-unknown approximation, so they don't
     /// stay "in progress" forever in the UI. Returns how many rows were closed.
@@ -193,6 +201,21 @@ public class EventRepository : IEventRepository
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving recent events");
+            return new List<StoredEvent>();
+        }
+    }
+
+    public async Task<List<StoredEvent>> GetUnclassifiedThumbnailedEventsAsync()
+    {
+        try
+        {
+            return await _context.Events
+                .Where(e => e.ThumbnailPath != null && e.YoloClassifiedAt == null)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving unclassified thumbnailed events");
             return new List<StoredEvent>();
         }
     }

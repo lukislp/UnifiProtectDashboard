@@ -147,6 +147,7 @@ public class EventIngestionService : BackgroundService
         {
             await BackfillMissedEventsAsync(stoppingToken);
             await CloseStaleOpenEventsAsync();
+            await EnqueueUnclassifiedBacklogAsync();
 
             try
             {
@@ -252,6 +253,48 @@ public class EventIngestionService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to backfill thumbnail for event {EventId}", unifiEventId);
+        }
+    }
+
+    /// <summary>
+    /// Re-enqueues events that already have a saved thumbnail but were never classified - the
+    /// durable trace of a classification request that didn't survive (e.g. dropped by the
+    /// bounded queue this project used to have, or a pod restart mid-backlog). Runs alongside
+    /// the existing backfill cycle rather than only once at startup, so it also recovers from a
+    /// future incident, not just this one. Re-enqueuing an event still sitting in an unbounded
+    /// backlog from a previous cycle is a harmless no-op in effect (SetYoloLabelsAsync just
+    /// overwrites with the same result) - accepted as simpler than tracking in-flight requests
+    /// for what's normally a rare, self-correcting case.
+    /// </summary>
+    private async Task EnqueueUnclassifiedBacklogAsync()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var eventRepository = scope.ServiceProvider.GetRequiredService<IEventRepository>();
+
+        var pending = await eventRepository.GetUnclassifiedThumbnailedEventsAsync();
+        if (pending.Count == 0)
+        {
+            return;
+        }
+
+        _logger.LogInformation("Re-enqueuing {Count} previously-unclassified event(s) for classification", pending.Count);
+
+        foreach (var evt in pending)
+        {
+            if (evt.ThumbnailPath == null || !File.Exists(evt.ThumbnailPath))
+            {
+                continue;
+            }
+
+            try
+            {
+                var bytes = await File.ReadAllBytesAsync(evt.ThumbnailPath);
+                _classificationQueue.TryEnqueue(new ClassificationRequest(evt.UnifiEventId, bytes));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read thumbnail while re-enqueuing event {EventId}", evt.UnifiEventId);
+            }
         }
     }
 
