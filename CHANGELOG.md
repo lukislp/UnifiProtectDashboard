@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.11.0...v1.12.0) (2026-08-22)
+
+
+### Features
+
+* **ui:** add a Settings link to the main dashboard header ([ed64854](https://github.com/lukislp/UnifiProtectDashboard/commit/ed64854e82c244ffd3849797d413f76ebdf10645))
+
 # [1.11.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.10.0...v1.11.0) (2026-08-22)
 
 
