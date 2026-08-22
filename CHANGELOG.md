@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.8.2...v1.9.0) (2026-08-22)
+
+
+### Features
+
+* **k8s:** rolling updates with an app-level write lock instead of Recreate ([085367c](https://github.com/lukislp/UnifiProtectDashboard/commit/085367c91e1fd1d86fb67b892e6b134aaaa2b2c6))
+
 ## [1.8.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.8.1...v1.8.2) (2026-08-21)
 
 
