@@ -243,6 +243,12 @@ a, .btn-link {
         font-weight: 500;
     }
 
+.camera-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 /* Camera Stream */
 .camera-stream {
     position: relative;

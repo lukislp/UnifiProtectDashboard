@@ -13,6 +13,20 @@ public interface ICameraRepository
     Task UpdateCameraAsync(UnifiCamera camera);
     Task<bool> HasAnyCamerasAsync();
     Task ClearAllCamerasAsync();
+
+    /// <summary>
+    /// Soft-deletes a camera (Enabled=false) - it disappears from the dashboard and the daily
+    /// digest, but its historical events are untouched (no FK/cascade to StoredEvent). Discovery
+    /// already checks existence against the unfiltered Cameras table, so a removed camera is
+    /// never silently re-added by the auto-discovery loop.
+    /// </summary>
+    Task RemoveCameraAsync(string unifiId);
+
+    /// <summary>Reverses RemoveCameraAsync - sets Enabled back to true.</summary>
+    Task RestoreCameraAsync(string unifiId);
+
+    /// <summary>Cameras with Enabled=false - used by Discovery.razor to offer a "Restore" action instead of miscategorizing them as new.</summary>
+    Task<List<UnifiCamera>> GetRemovedCamerasAsync();
 }
 
 public class CameraRepository : ICameraRepository
@@ -151,6 +165,68 @@ public class CameraRepository : ICameraRepository
     public async Task<bool> HasAnyCamerasAsync()
     {
         return await _context.Cameras.AnyAsync();
+    }
+
+    public async Task RemoveCameraAsync(string unifiId)
+    {
+        try
+        {
+            var storedCamera = await _context.Cameras.FirstOrDefaultAsync(c => c.UnifiId == unifiId);
+            if (storedCamera == null)
+            {
+                return;
+            }
+
+            storedCamera.Enabled = false;
+            storedCamera.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Camera removed: {Name} ({Id})", storedCamera.Name, unifiId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing camera {Id}", unifiId);
+            throw;
+        }
+    }
+
+    public async Task RestoreCameraAsync(string unifiId)
+    {
+        try
+        {
+            var storedCamera = await _context.Cameras.FirstOrDefaultAsync(c => c.UnifiId == unifiId);
+            if (storedCamera == null)
+            {
+                return;
+            }
+
+            storedCamera.Enabled = true;
+            storedCamera.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Camera restored: {Name} ({Id})", storedCamera.Name, unifiId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring camera {Id}", unifiId);
+            throw;
+        }
+    }
+
+    public async Task<List<UnifiCamera>> GetRemovedCamerasAsync()
+    {
+        try
+        {
+            var storedCameras = await _context.Cameras
+                .Where(c => !c.Enabled)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            return storedCameras.Select(MapToUnifiCamera).ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving removed cameras");
+            return new List<UnifiCamera>();
+        }
     }
 
     public async Task ClearAllCamerasAsync()

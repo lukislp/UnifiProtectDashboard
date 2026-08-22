@@ -106,6 +106,15 @@
   "DiscoverySavedMsg":              "{0} neue Kamera(s) erfolgreich gespeichert!",
   "DiscoveryNoNewCameras":          "Keine neuen Kameras zum Hinzufügen.",
   "DiscoverySaveError":             "Fehler beim Speichern der Kameras",
+  "DiscoveryRemoved":               "entfernt",
+  "DiscoveryRestoreButton":         "Wiederherstellen",
+  "DiscoveryRestoredMsg":           "„{0}“ wiederhergestellt.",
+  "DiscoveryRestoreError":          "Fehler beim Wiederherstellen der Kamera",
+
+  "RemoveCameraButton":             "Kamera entfernen",
+  "RemoveCameraConfirmMsg":         "„{0}“ entfernen? Der Ereignisverlauf bleibt erhalten, die Kamera verschwindet aber aus dieser Ansicht.",
+  "RemoveCameraConfirmYes":         "Ja, entfernen",
+  "RemoveCameraConfirmNo":          "Abbrechen",
 
   "EventsTitle":                    "Ereignisverlauf",
   "EventsLoading":                  "Ereignisse werden geladen...",

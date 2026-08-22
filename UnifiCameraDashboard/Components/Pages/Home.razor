@@ -4,6 +4,7 @@
 @using UnifiCameraDashboard.Models
 @using UnifiCameraDashboard.Services
 @inject IUnifiCameraService CameraService
+@inject ICameraRepository CameraRepository
 @inject IJSRuntime JS
 
 <PageTitle>Unifi Camera Dashboard</PageTitle>
@@ -103,9 +104,26 @@
   <div class="camera-tile @(camera.IsOnline ? "online" : "offline")" @key="camera.Id">
     <div class="camera-header">
       <h5>@camera.Name</h5>
-     <span class="badge bg-@(camera.IsOnline ? "success" : "danger")">
-           @(camera.IsOnline ? GetStreamModeBadge() : I18n.Get("Offline"))
-       </span>
+        <div class="camera-header-actions">
+            <span class="badge bg-@(camera.IsOnline ? "success" : "danger")">
+                @(camera.IsOnline ? GetStreamModeBadge() : I18n.Get("Offline"))
+            </span>
+            @if (_pendingRemoveCameraId == camera.Id)
+            {
+                <button class="btn btn-sm btn-danger" title="@I18n.Format("RemoveCameraConfirmMsg", camera.Name)" @onclick="@(() => RemoveCamera(camera))">
+                    <i class="bi bi-check-lg"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" title="@I18n.Get("RemoveCameraConfirmNo")" @onclick="@(() => _pendingRemoveCameraId = null)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-sm btn-outline-danger" title="@I18n.Get("RemoveCameraButton")" @onclick="@(() => _pendingRemoveCameraId = camera.Id)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            }
+        </div>
  </div>
   <div class="camera-stream">
    @if (_streamMode == StreamMode.Hls)
@@ -499,6 +517,7 @@ font-size: 0.75rem !important;
     private System.Threading.Timer? _countdownTimer;
     private Dictionary<string, bool> _hlsStreamsStarted = new();
     private System.Threading.Timer? _streamWatchdog;
+    private string? _pendingRemoveCameraId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -586,6 +605,33 @@ await StartHlsStreamsForAllCameras();
    {
             Console.WriteLine($"Error stopping HLS streams: {ex.Message}");
      }
+    }
+
+    private async Task RemoveCamera(UnifiCamera camera)
+    {
+        try
+        {
+            await CameraRepository.RemoveCameraAsync(camera.Id);
+
+            if (_hlsStreamsStarted.ContainsKey(camera.Id))
+            {
+                await JS.InvokeVoidAsync("stopHlsPlayer", camera.Id);
+                _hlsStreamsStarted.Remove(camera.Id);
+            }
+
+            // Reload from the DB rather than splicing _cameras locally, so the grid-column
+            // sizing (LoadCameras' own switch on _cameras.Count) stays correct too.
+            await LoadCameras();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error removing camera {camera.Id}: {ex.Message}");
+        }
+        finally
+        {
+            _pendingRemoveCameraId = null;
+            StateHasChanged();
+        }
     }
 
     private async Task LoadCameras()
