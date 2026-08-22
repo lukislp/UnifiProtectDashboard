@@ -24,6 +24,10 @@ Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
 builder.Services.AddDbContext<DashboardDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddSingleton(new DataDirectoryOptions(dataDir));
+// Coordinates the write-active instance across a rolling update - see InstanceLock.cs. A
+// singleton so EventIngestionService/EventClassificationService share the same lock attempt
+// (one FileStream, one OS-level lock) instead of each independently contending for it.
+builder.Services.AddSingleton<IInstanceLock, FileInstanceLock>();
 
 // Register HttpClientFactory for better cookie handling
 builder.Services.AddHttpClient();
