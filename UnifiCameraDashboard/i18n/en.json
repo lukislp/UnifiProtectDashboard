@@ -106,6 +106,15 @@
   "DiscoverySavedMsg":              "{0} new camera(s) saved successfully!",
   "DiscoveryNoNewCameras":          "No new cameras to add.",
   "DiscoverySaveError":             "Error saving cameras",
+  "DiscoveryRemoved":               "removed",
+  "DiscoveryRestoreButton":         "Restore",
+  "DiscoveryRestoredMsg":           "\"{0}\" restored.",
+  "DiscoveryRestoreError":          "Error restoring camera",
+
+  "RemoveCameraButton":             "Remove camera",
+  "RemoveCameraConfirmMsg":         "Remove \"{0}\"? Its event history stays, but it disappears from this view.",
+  "RemoveCameraConfirmYes":         "Yes, remove",
+  "RemoveCameraConfirmNo":          "Cancel",
 
   "EventsTitle":                    "Event History",
   "EventsLoading":                  "Loading events...",

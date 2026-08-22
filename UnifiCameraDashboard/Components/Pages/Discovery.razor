@@ -97,7 +97,8 @@
       @foreach (var camera in _discoveredCameras)
  {
         var isExisting = _existingCameraIds.Contains(camera.Id);
-   <tr class="@(isExisting ? "table-secondary opacity-75" : "")">
+        var isRemoved = _removedCameraIds.Contains(camera.Id);
+   <tr class="@((isExisting || isRemoved) ? "table-secondary opacity-75" : "")">
      <td>
      <span class="badge bg-@(camera.IsOnline ? "success" : "danger")">
     @(camera.IsOnline ? I18n.Get("Online") : I18n.Get("Offline"))
@@ -108,13 +109,20 @@
    <td><small class="text-muted">@camera.MacAddress</small></td>
   <td>@camera.Width x @camera.Height</td>
     <td>
-        <img src="/api/snapshot/@camera.Id?w=200&h=120" 
-          alt="@camera.Name" 
+        <img src="/api/snapshot/@camera.Id?w=200&h=120"
+          alt="@camera.Name"
        style="max-width: 200px; max-height: 120px; border-radius: 4px;"
               onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22120%22%3E%3Crect fill=%22%23333%22 width=%22200%22 height=%22120%22/%3E%3Ctext fill=%22%23fff%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo preview%3C/text%3E%3C/svg%3E'" />
             </td>
         <td>
-            @if (isExisting)
+            @if (isRemoved)
+            {
+                <span class="badge bg-warning text-dark"><i class="bi bi-trash"></i> @I18n.Get("DiscoveryRemoved")</span>
+                <button class="btn btn-sm btn-outline-light ms-1" @onclick="@(() => RestoreCamera(camera))" disabled="@_isRestoring">
+                    <i class="bi bi-arrow-counterclockwise"></i> @I18n.Get("DiscoveryRestoreButton")
+                </button>
+            }
+            else if (isExisting)
             {
                 <span class="badge bg-secondary"><i class="bi bi-check-circle"></i> @I18n.Get("DiscoveryYes")</span>
             }
@@ -205,9 +213,11 @@ background: var(--tile-bg, #1e2336);
 @code {
     private List<UnifiCamera> _discoveredCameras = new();
     private HashSet<string> _existingCameraIds = new();
+    private HashSet<string> _removedCameraIds = new();
     private List<UnifiCamera> _newCameras = new();
     private bool _isDiscovering = false;
     private bool _isSaving = false;
+    private bool _isRestoring = false;
     private string _statusMessage = "";
     private string _statusClass = "info";
 
@@ -231,9 +241,15 @@ background: var(--tile-bg, #1e2336);
         var existingCameras = await CameraRepository.GetAllCamerasAsync();
         _existingCameraIds = existingCameras.Select(c => c.Id).ToHashSet();
 
+        // Removed (soft-deleted) cameras - excluded from "new" below, since re-saving them is a
+        // silent no-op (AddCamerasAsync's existence check runs against the unfiltered table);
+        // they get their own "Restore" action in the table instead.
+        var removedCameras = await CameraRepository.GetRemovedCamerasAsync();
+        _removedCameraIds = removedCameras.Select(c => c.Id).ToHashSet();
+
         // Compute truly new cameras
         _newCameras = _discoveredCameras
-            .Where(c => !_existingCameraIds.Contains(c.Id))
+            .Where(c => !_existingCameraIds.Contains(c.Id) && !_removedCameraIds.Contains(c.Id))
             .ToList();
 
 if (_discoveredCameras.Any())
@@ -309,5 +325,32 @@ catch (Exception ex)
       _isSaving = false;
    StateHasChanged();
       }
+    }
+
+    private async Task RestoreCamera(UnifiCamera camera)
+    {
+        try
+        {
+            _isRestoring = true;
+            StateHasChanged();
+
+            await CameraRepository.RestoreCameraAsync(camera.Id);
+
+            _removedCameraIds.Remove(camera.Id);
+            _existingCameraIds.Add(camera.Id);
+
+            _statusMessage = I18n.Format("DiscoveryRestoredMsg", camera.Name);
+            _statusClass = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = I18n.Get("DiscoveryRestoreError") + $": {ex.Message}";
+            _statusClass = "danger";
+        }
+        finally
+        {
+            _isRestoring = false;
+            StateHasChanged();
+        }
     }
 }
