@@ -1,3 +1,15 @@
+# [1.11.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.10.0...v1.11.0) (2026-08-22)
+
+
+### Bug Fixes
+
+* **ci:** restore NotifyHub in test-build/test-lint/test-security ([c243afd](https://github.com/lukislp/UnifiProtectDashboard/commit/c243afdfb9f8efd477fe6e70ce868819bbec3562))
+
+
+### Features
+
+* **notifications:** add S3 daily digest via Web Push (NotifyHub) ([92016ec](https://github.com/lukislp/UnifiProtectDashboard/commit/92016ec34e6f31166d2f7cf9519de46e322b2bc6))
+
 # [1.10.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.9.0...v1.10.0) (2026-08-22)
 
 
