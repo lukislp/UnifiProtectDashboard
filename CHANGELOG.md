@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.12.0...v1.13.0) (2026-08-22)
+
+
+### Features
+
+* own this repo's Flux GitOps wiring ([770f717](https://github.com/lukislp/UnifiProtectDashboard/commit/770f7172b7adb0a784ba173396e6ca96f3a1ccff))
+
 # [1.12.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.11.0...v1.12.0) (2026-08-22)
 
 
