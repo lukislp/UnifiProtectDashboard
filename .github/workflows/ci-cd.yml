@@ -35,6 +35,10 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
           restore-keys: |
             nuget-${{ runner.os }}-
+      - name: Download NotifyHub nupkg (not on nuget.org - see UnifiCameraDashboard/nuget-packages/README.md)
+        run: |
+          mkdir -p UnifiCameraDashboard/nuget-packages
+          curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
       - run: dotnet restore UnifiCameraDashboard.sln
       - run: dotnet build UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-restore
       - run: dotnet test UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-build
@@ -52,6 +56,10 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
           restore-keys: |
             nuget-${{ runner.os }}-
+      - name: Download NotifyHub nupkg (not on nuget.org - see UnifiCameraDashboard/nuget-packages/README.md)
+        run: |
+          mkdir -p UnifiCameraDashboard/nuget-packages
+          curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
       - run: dotnet format UnifiCameraDashboard.sln --verify-no-changes --verbosity diagnostic
 
   test-security:
@@ -67,6 +75,10 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
           restore-keys: |
             nuget-${{ runner.os }}-
+      - name: Download NotifyHub nupkg (not on nuget.org - see UnifiCameraDashboard/nuget-packages/README.md)
+        run: |
+          mkdir -p UnifiCameraDashboard/nuget-packages
+          curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
       - run: dotnet restore UnifiCameraDashboard.sln
       - run: |
           dotnet list UnifiCameraDashboard.sln package --vulnerable --include-transitive --format json > nuget-vulnerabilities.json
