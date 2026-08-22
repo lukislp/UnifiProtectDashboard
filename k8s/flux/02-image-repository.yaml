@@ -1,0 +1,9 @@
+# Scans GHCR for new tags of this repo's image. Public package - no secretRef needed.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: unifiprotectdashboard
+  namespace: flux-system
+spec:
+  image: ghcr.io/lukislp/unifiprotectdashboard
+  interval: 5m
