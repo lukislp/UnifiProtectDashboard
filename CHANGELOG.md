@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.9.0...v1.10.0) (2026-08-22)
+
+
+### Features
+
+* **cameras:** add the ability to remove a camera from the dashboard ([49862c8](https://github.com/lukislp/UnifiProtectDashboard/commit/49862c85a7ab1785365030a78deff30a4c46a2a9))
+
 # [1.9.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.8.2...v1.9.0) (2026-08-22)
 
 
