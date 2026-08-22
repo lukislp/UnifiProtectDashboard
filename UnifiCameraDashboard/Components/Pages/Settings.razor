@@ -4,6 +4,7 @@
 @inject ISettingsService SettingsService
 @inject I18nService I18n
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <PageTitle>@I18n.Get("SettingsTitle")</PageTitle>
 
@@ -110,6 +111,71 @@
                             </div>
                         </div>
 
+                        <!-- Notifications -->
+                        <div class="settings-section mb-4">
+                            <h5><i class="bi bi-bell"></i> @I18n.Get("SettingsNotifications")</h5>
+                            <hr />
+                            <p class="text-muted">@I18n.Get("SettingsNotificationsHint")</p>
+
+                            <div class="mb-3">
+                                @if (_pushStatus == "enabled")
+                                {
+                                    <span class="badge bg-success mb-2"><i class="bi bi-check-circle"></i> @I18n.Get("SettingsNotificationsEnabled")</span>
+                                    <div class="mt-2">
+                                        <button class="btn btn-outline-danger" @onclick="DisablePush" disabled="@_isPushBusy">
+                                            @I18n.Get("SettingsNotificationsDisable")
+                                        </button>
+                                        <button class="btn btn-outline-primary ms-2" @onclick="SendTestNotification" disabled="@_isPushBusy">
+                                            @I18n.Get("SettingsNotificationsTest")
+                                        </button>
+                                    </div>
+                                }
+                                else if (_pushStatus == "unsupported")
+                                {
+                                    <span class="badge bg-secondary"><i class="bi bi-x-circle"></i> @I18n.Get("SettingsNotificationsUnsupported")</span>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-primary" @onclick="EnablePush" disabled="@_isPushBusy">
+                                        @if (_isPushBusy)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                        }
+                                        <i class="bi bi-bell"></i>
+                                        @I18n.Get("SettingsNotificationsEnable")
+                                    </button>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(_pushStatusMessage))
+                            {
+                                <div class="alert alert-@_pushStatusClass">@_pushStatusMessage</div>
+                            }
+                        </div>
+
+                        <!-- Daily Digest -->
+                        <div class="settings-section mb-4">
+                            <h5><i class="bi bi-calendar-check"></i> @I18n.Get("SettingsDailyDigest")</h5>
+                            <hr />
+
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" @bind="_dailyDigestEnabled" />
+                                <label class="form-check-label">@I18n.Get("SettingsDailyDigestEnabled")</label>
+                                <br />
+                                <small class="form-text text-muted">@I18n.Get("SettingsDailyDigestHint")</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">@I18n.Get("SettingsDailyDigestTime")</label>
+                                <input type="time" class="form-control" style="max-width: 200px;" @bind="_dailyDigestTime" />
+                            </div>
+
+                            <button class="btn btn-success" @onclick="SaveDailyDigestSettings" disabled="@_isSaving">
+                                <i class="bi bi-save"></i>
+                                @I18n.Get("SettingsDailyDigestSave")
+                            </button>
+                        </div>
+
                         @if (!string.IsNullOrEmpty(_statusMessage))
                         {
                             <div class="alert alert-@_statusClass" role="alert">
@@ -195,6 +261,17 @@
     private string _statusMessage = "";
     private string _statusClass = "info";
 
+    // "enabled" | "disabled" | "unsupported" - starts "disabled" until OnAfterRenderAsync can
+    // actually ask the browser (webPush.getStatus needs a live JS runtime, unavailable during
+    // prerendering).
+    private string _pushStatus = "disabled";
+    private bool _isPushBusy = false;
+    private string _pushStatusMessage = "";
+    private string _pushStatusClass = "info";
+
+    private bool _dailyDigestEnabled;
+    private TimeOnly _dailyDigestTime = new(20, 0);
+
     protected override async Task OnInitializedAsync()
     {
         // Load current settings
@@ -203,6 +280,18 @@
         _password = await SettingsService.GetPasswordAsync() ?? "";
         _refreshInterval = await SettingsService.GetRefreshIntervalAsync();
         _autoDiscovery = await SettingsService.GetAutoDiscoveryEnabledAsync();
+        _dailyDigestEnabled = await SettingsService.GetDailyDigestEnabledAsync();
+        var storedTime = await SettingsService.GetDailyDigestTimeOfDayAsync();
+        _dailyDigestTime = TimeOnly.TryParseExact(storedTime, "HH:mm", out var parsedTime) ? parsedTime : new TimeOnly(20, 0);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _pushStatus = await JS.InvokeAsync<string>("webPush.getStatus");
+            StateHasChanged();
+        }
     }
 
     private async Task SaveCredentials()
@@ -274,5 +363,133 @@
             _isSaving = false;
             StateHasChanged();
         }
+    }
+
+    private async Task EnablePush()
+    {
+        try
+        {
+            _isPushBusy = true;
+            _pushStatusMessage = "";
+            StateHasChanged();
+
+            var result = await JS.InvokeAsync<PushJsResult>("webPush.enable");
+            if (result.Success)
+            {
+                _pushStatus = "enabled";
+                _pushStatusMessage = I18n.Get("SettingsNotificationsEnabledMsg");
+                _pushStatusClass = "success";
+            }
+            else
+            {
+                _pushStatusMessage = result.Error ?? I18n.Get("SettingsNotificationsError");
+                _pushStatusClass = "danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            _pushStatusMessage = $"Error: {ex.Message}";
+            _pushStatusClass = "danger";
+        }
+        finally
+        {
+            _isPushBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DisablePush()
+    {
+        try
+        {
+            _isPushBusy = true;
+            StateHasChanged();
+
+            await JS.InvokeVoidAsync("webPush.disable");
+            _pushStatus = "disabled";
+            _pushStatusMessage = I18n.Get("SettingsNotificationsDisabledMsg");
+            _pushStatusClass = "info";
+        }
+        catch (Exception ex)
+        {
+            _pushStatusMessage = $"Error: {ex.Message}";
+            _pushStatusClass = "danger";
+        }
+        finally
+        {
+            _isPushBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SendTestNotification()
+    {
+        try
+        {
+            _isPushBusy = true;
+            _pushStatusMessage = "";
+            StateHasChanged();
+
+            var result = await JS.InvokeAsync<PushTestJsResult>("webPush.test");
+            if (result.Success)
+            {
+                _pushStatusMessage = I18n.Format("SettingsNotificationsTestMsg", result.Delivered, result.Total);
+                _pushStatusClass = result.Delivered > 0 ? "success" : "warning";
+            }
+            else
+            {
+                _pushStatusMessage = result.Error ?? I18n.Get("SettingsNotificationsError");
+                _pushStatusClass = "danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            _pushStatusMessage = $"Error: {ex.Message}";
+            _pushStatusClass = "danger";
+        }
+        finally
+        {
+            _isPushBusy = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveDailyDigestSettings()
+    {
+        try
+        {
+            _isSaving = true;
+            _statusMessage = "";
+            StateHasChanged();
+
+            await SettingsService.SaveDailyDigestSettingsAsync(_dailyDigestEnabled, _dailyDigestTime.ToString("HH:mm"));
+
+            _statusMessage = I18n.Get("SettingsDailyDigestSavedMsg");
+            _statusClass = "success";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error: {ex.Message}";
+            _statusClass = "danger";
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private sealed class PushJsResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+    }
+
+    private sealed class PushTestJsResult
+    {
+        public bool Success { get; set; }
+        public string? Error { get; set; }
+        public int Delivered { get; set; }
+        public int Total { get; set; }
     }
 }

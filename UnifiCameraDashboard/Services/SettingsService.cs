@@ -17,6 +17,12 @@ public interface ISettingsService
     Task<int> GetRefreshIntervalAsync();
     Task<bool> GetAutoDiscoveryEnabledAsync();
     Task SaveUnifiCredentialsAsync(string url, string username, string password);
+
+    Task<bool> GetDailyDigestEnabledAsync();
+
+    /// <summary>"HH:mm" in local server time.</summary>
+    Task<string> GetDailyDigestTimeOfDayAsync();
+    Task SaveDailyDigestSettingsAsync(bool enabled, string timeOfDay);
 }
 
 public class SettingsService : ISettingsService
@@ -32,6 +38,8 @@ public class SettingsService : ISettingsService
     private const string KEY_PASSWORD = "UnifiPassword";
     private const string KEY_REFRESH_INTERVAL = "RefreshIntervalSeconds";
     private const string KEY_AUTO_DISCOVERY = "AutoDiscoveryEnabled";
+    private const string KEY_DAILY_DIGEST_ENABLED = "DailyDigestEnabled";
+    private const string KEY_DAILY_DIGEST_TIME = "DailyDigestTimeOfDay";
 
     public SettingsService(DashboardDbContext context, ILogger<SettingsService> logger, IConfiguration configuration)
     {
@@ -173,6 +181,23 @@ public class SettingsService : ISettingsService
         await SetSettingAsync(KEY_AUTO_DISCOVERY, "true", encrypt: false);
 
         _logger.LogInformation("Unifi Protect credentials saved");
+    }
+
+    public async Task<bool> GetDailyDigestEnabledAsync()
+    {
+        var value = await GetSettingAsync(KEY_DAILY_DIGEST_ENABLED);
+        return value == "true";
+    }
+
+    public async Task<string> GetDailyDigestTimeOfDayAsync()
+    {
+        return await GetSettingAsync(KEY_DAILY_DIGEST_TIME) ?? "20:00";
+    }
+
+    public async Task SaveDailyDigestSettingsAsync(bool enabled, string timeOfDay)
+    {
+        await SetSettingAsync(KEY_DAILY_DIGEST_ENABLED, enabled ? "true" : "false", encrypt: false);
+        await SetSettingAsync(KEY_DAILY_DIGEST_TIME, timeOfDay, encrypt: false);
     }
 
     // Encryption with AES

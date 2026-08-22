@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using NotifyHub;
+using NotifyHub.Stores;
 using UnifiCameraDashboard.Components;
 using UnifiCameraDashboard.Data;
 using UnifiCameraDashboard.Services;
 using UnifiCameraDashboard.Services.Classification;
+using UnifiCameraDashboard.Services.Notifications;
 using UnifiCameraDashboard.Services.Protect;
 using UnifiCameraDashboard.BackgroundServices;
 
@@ -44,7 +47,16 @@ builder.Services.AddScoped<IUnifiProtectService, UnifiProtectService>();
 builder.Services.AddScoped<IUnifiCameraService, UnifiCameraService>();
 builder.Services.AddScoped<IProtectWebSocketClient, ProtectWebSocketClient>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<IPushSubscriptionRepository, PushSubscriptionRepository>();
 builder.Services.AddSingleton<IFfmpegService, FfmpegService>();
+
+// Web Push via NotifyHub (github.com/lukislp/NotifyHub) - registers NotificationSender and
+// VapidKeyProvider as singletons. The default FileVapidKeyStore writes to the current working
+// directory, which isn't on the persistent PVC in production - pointed at DATA_DIR instead so
+// the keypair (and every subscription tied to it) survives a pod restart/rollout.
+builder.Services.AddNotifyHub(hub => hub
+    .WithVapidSubject("mailto:push@lukas2311-homelab.com")
+    .WithVapidKeyStore(new FileVapidKeyStore(Path.Combine(dataDir, "vapid-keys.json"))));
 // The ONNX model is loaded once here - expensive, and the model is stateless/reusable, so a
 // singleton rather than resolving it per classification.
 builder.Services.AddSingleton<IYoloClassifier>(_ => new YoloClassifier(YoloClassifier.ResolveModelPath()));
@@ -57,6 +69,7 @@ builder.Services.AddHostedService<EventIngestionService>();
 builder.Services.AddSingleton<EventClassificationService>();
 builder.Services.AddSingleton<IClassificationQueue>(sp => sp.GetRequiredService<EventClassificationService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<EventClassificationService>());
+builder.Services.AddHostedService<DailyDigestService>();
 
 // Add Controllers for API endpoints
 builder.Services.AddControllers();

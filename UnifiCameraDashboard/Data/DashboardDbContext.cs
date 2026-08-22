@@ -12,6 +12,7 @@ public class DashboardDbContext : DbContext
     public DbSet<StoredCamera> Cameras { get; set; } = null!;
     public DbSet<AppSettings> Settings { get; set; } = null!;
     public DbSet<StoredEvent> Events { get; set; } = null!;
+    public DbSet<StoredPushSubscription> PushSubscriptions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +50,16 @@ public class DashboardDbContext : DbContext
             entity.Property(e => e.SmartDetectTypes).IsRequired().HasMaxLength(200);
             entity.Property(e => e.ThumbnailPath).HasMaxLength(500);
             entity.Property(e => e.YoloLabels).IsRequired().HasMaxLength(200);
+        });
+
+        // Push subscription configuration
+        modelBuilder.Entity<StoredPushSubscription>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Endpoint).IsUnique();
+            entity.Property(e => e.Endpoint).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.P256dh).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Auth).IsRequired().HasMaxLength(100);
         });
     }
 }
@@ -103,4 +114,17 @@ public class StoredEvent
     public DateTime? YoloClassifiedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>
+/// One browser/device's Web Push registration. Endpoint is the push service's per-subscription
+/// URL - effectively its identity, since a browser gets a new one if it re-subscribes.
+/// </summary>
+public class StoredPushSubscription
+{
+    public int Id { get; set; }
+    public string Endpoint { get; set; } = string.Empty;
+    public string P256dh { get; set; } = string.Empty;
+    public string Auth { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

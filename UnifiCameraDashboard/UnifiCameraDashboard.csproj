@@ -13,6 +13,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
+    <PackageReference Include="NotifyHub" Version="0.2.2" />
     <PackageReference Include="SkiaSharp" Version="4.151.1" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.1" />
     <!-- Pinned above the transitive default to fix CVE-2025-6965 (SQLite memory corruption, GHSA-2m69-gcr7-jv3q) -->
