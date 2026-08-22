@@ -215,6 +215,11 @@ secrets.json
 **/Tools/yolo/*.onnx
 !**/Tools/yolo/README.md
 
+# NotifyHub nupkg (separate repo, not on nuget.org - download from its GitHub Release, see
+# UnifiCameraDashboard/nuget-packages/README.md)
+**/nuget-packages/*.nupkg
+!**/nuget-packages/README.md
+
 # Local deployment scripts (may contain credentials)
 deploy-local.ps1
 deploy-local.sh

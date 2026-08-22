@@ -45,6 +45,13 @@ public interface IEventRepository
     /// stay "in progress" forever in the UI. Returns how many rows were closed.
     /// </summary>
     Task<int> CloseStaleOpenEventsAsync(TimeSpan maxOpenDuration);
+
+    /// <summary>
+    /// Per-(camera, YOLO label) detection counts since <paramref name="sinceUtc"/> - the raw
+    /// material for the daily digest. Events with no labels (nothing detected, or not yet
+    /// classified) are excluded rather than counted as a "no label" bucket.
+    /// </summary>
+    Task<List<(string CameraUnifiId, string Label, int Count)>> GetLabelCountsSinceAsync(DateTime sinceUtc);
 }
 
 public class EventRepository : IEventRepository
@@ -246,6 +253,29 @@ public class EventRepository : IEventRepository
         {
             _logger.LogError(ex, "Error closing stale open events");
             return 0;
+        }
+    }
+
+    public async Task<List<(string CameraUnifiId, string Label, int Count)>> GetLabelCountsSinceAsync(DateTime sinceUtc)
+    {
+        try
+        {
+            var events = await _context.Events
+                .Where(e => e.Start >= sinceUtc && e.CameraUnifiId != null && e.YoloLabels != "")
+                .Select(e => new { e.CameraUnifiId, e.YoloLabels })
+                .ToListAsync();
+
+            return events
+                .SelectMany(e => e.YoloLabels.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(label => (CameraUnifiId: e.CameraUnifiId!, Label: label)))
+                .GroupBy(x => (x.CameraUnifiId, x.Label))
+                .Select(g => (g.Key.CameraUnifiId, g.Key.Label, Count: g.Count()))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving label counts since {SinceUtc}", sinceUtc);
+            return new List<(string, string, int)>();
         }
     }
 

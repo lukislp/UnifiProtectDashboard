@@ -250,6 +250,28 @@ public class EventRepositoryTests
         Assert.Equal("dropped-before-classification", pendingId.UnifiEventId);
     }
 
+    [Fact]
+    public async Task GetLabelCountsSinceAsync_CountsPerCameraAndLabel_ExcludingUnlabeledAndOldEvents()
+    {
+        await using var db = await TestDb.CreateAsync();
+        var repository = new EventRepository(db.Context, NullLogger<EventRepository>.Instance);
+        var now = DateTime.UtcNow;
+        db.Context.Events.AddRange(
+            new StoredEvent { UnifiEventId = "e1", Type = "motion", CameraUnifiId = "cam-1", YoloLabels = "person,car", Start = now.AddHours(-1) },
+            new StoredEvent { UnifiEventId = "e2", Type = "motion", CameraUnifiId = "cam-1", YoloLabels = "person", Start = now.AddHours(-2) },
+            new StoredEvent { UnifiEventId = "e3", Type = "motion", CameraUnifiId = "cam-2", YoloLabels = "car", Start = now.AddHours(-1) },
+            new StoredEvent { UnifiEventId = "e4-unclassified", Type = "motion", CameraUnifiId = "cam-1", YoloLabels = "", Start = now.AddHours(-1) },
+            new StoredEvent { UnifiEventId = "e5-too-old", Type = "motion", CameraUnifiId = "cam-1", YoloLabels = "person", Start = now.AddDays(-2) });
+        await db.Context.SaveChangesAsync();
+
+        var counts = await repository.GetLabelCountsSinceAsync(now.AddHours(-24));
+
+        Assert.Equal(3, counts.Count);
+        Assert.Contains(counts, c => c.CameraUnifiId == "cam-1" && c.Label == "person" && c.Count == 2);
+        Assert.Contains(counts, c => c.CameraUnifiId == "cam-1" && c.Label == "car" && c.Count == 1);
+        Assert.Contains(counts, c => c.CameraUnifiId == "cam-2" && c.Label == "car" && c.Count == 1);
+    }
+
     private static JsonElement ParseJson(string json) => JsonDocument.Parse(json).RootElement.Clone();
 
     private sealed class TestDb : IAsyncDisposable

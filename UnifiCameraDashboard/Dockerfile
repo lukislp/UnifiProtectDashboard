@@ -2,7 +2,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY ["UnifiCameraDashboard.csproj", "./"]
+COPY ["UnifiCameraDashboard.csproj", "nuget.config", "./"]
+
+# NotifyHub (github.com/lukislp/NotifyHub) isn't published to nuget.org - its GitHub Releases
+# attach real versioned nupkgs instead. Downloaded into the local feed nuget.config points at,
+# before restore needs it - same not-committed-to-git treatment as the YOLO model below, just
+# earlier in the build since this one is a compile-time dependency.
+RUN mkdir -p nuget-packages && \
+    curl -fsSL -o nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
+
 RUN dotnet restore "UnifiCameraDashboard.csproj"
 
 COPY . .
