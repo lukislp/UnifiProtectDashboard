@@ -33,6 +33,7 @@ public class EventIngestionService : BackgroundService
     private readonly IConfiguration _configuration;
     private readonly DataDirectoryOptions _dataDirectory;
     private readonly IClassificationQueue _classificationQueue;
+    private readonly IInstanceLock _instanceLock;
     private readonly ILogger<EventIngestionService> _logger;
 
     public EventIngestionService(
@@ -40,12 +41,14 @@ public class EventIngestionService : BackgroundService
         IConfiguration configuration,
         DataDirectoryOptions dataDirectory,
         IClassificationQueue classificationQueue,
+        IInstanceLock instanceLock,
         ILogger<EventIngestionService> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
         _dataDirectory = dataDirectory;
         _classificationQueue = classificationQueue;
+        _instanceLock = instanceLock;
         _logger = logger;
     }
 
@@ -56,6 +59,13 @@ public class EventIngestionService : BackgroundService
             _logger.LogInformation("Event ingestion disabled via configuration (EventIngestion:Enabled=false)");
             return;
         }
+
+        // During a rolling update both the old and new pod are briefly up together (see
+        // k8s/01-app.yaml) so the web UI stays reachable - but only one of them may hold the
+        // Protect websocket connection and advance the backfill watermark, or both would race
+        // on the same state. This blocks until the old pod's copy of the lock is released
+        // (i.e. it has actually stopped), not on any fixed delay.
+        await _instanceLock.WhenAcquiredAsync(stoppingToken);
 
         // One scope for the websocket client's whole lifetime - it only depends on
         // IUnifiProtectService, which doesn't accumulate EF change-tracker state between calls.

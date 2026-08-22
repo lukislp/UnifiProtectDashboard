@@ -33,12 +33,14 @@ public sealed class EventClassificationService : BackgroundService, IClassificat
     private readonly Channel<ClassificationRequest> _channel;
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
+    private readonly IInstanceLock _instanceLock;
     private readonly ILogger<EventClassificationService> _logger;
 
-    public EventClassificationService(IServiceProvider serviceProvider, IConfiguration configuration, ILogger<EventClassificationService> logger)
+    public EventClassificationService(IServiceProvider serviceProvider, IConfiguration configuration, IInstanceLock instanceLock, ILogger<EventClassificationService> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
+        _instanceLock = instanceLock;
         _logger = logger;
         _channel = Channel.CreateUnbounded<ClassificationRequest>();
     }
@@ -61,6 +63,11 @@ public sealed class EventClassificationService : BackgroundService, IClassificat
             _logger.LogInformation("Event classification disabled via configuration (EventClassification:Enabled=false)");
             return;
         }
+
+        // Same write-instance lock as EventIngestionService (see there) - during a rolling
+        // update, only one pod's copy of this service should be draining the queue and writing
+        // classification results at a time.
+        await _instanceLock.WhenAcquiredAsync(stoppingToken);
 
         // IYoloClassifier is a singleton (the ONNX model is loaded once) - resolvable directly
         // from the root provider, no scope needed for it.

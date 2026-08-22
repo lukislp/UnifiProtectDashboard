@@ -28,9 +28,21 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    # Single instance with an RWO volume (SQLite is a plain file, not built for concurrent
-    # writers) - same reasoning as the sibling apps' own single-instance deployments.
-    type: Recreate
+    # RollingUpdate (not Recreate) so the web UI stays reachable through a rollout: the new pod
+    # comes up and starts serving traffic BEFORE the old one is terminated. This only works
+    # safely with a single-writer SQLite file because of two things together: (1) nodeSelector
+    # below pins every replica to the same node, and the PVC's local-path StorageClass is a
+    # hostPath bind-mount - both pods can mount it concurrently without an RWX volume; (2) the
+    # app itself gates its write-active background services (event ingestion, classification)
+    # behind a file lock (see Services/InstanceLock.cs) so only one pod's copy of those actually
+    # runs at a time - the new pod serves reads immediately but waits for the old pod to
+    # actually stop (releasing the lock) before it starts writing. maxUnavailable: 0 keeps the
+    # old pod up until the new one is ready; maxSurge: 1 is the only way to get an overlap at
+    # replicas: 1.
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels: {app: unifiprotectdashboard}
   template:
