@@ -1,0 +1,13 @@
+# Selects the "newest" tag by SemVer - this repo's own semantic-release setup pushes plain
+# SemVer docker tags without a "v" prefix.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: unifiprotectdashboard
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: unifiprotectdashboard
+  policy:
+    semver:
+      range: ">=0.0.0"
