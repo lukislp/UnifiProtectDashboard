@@ -1,3 +1,10 @@
+## [1.13.3](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.2...v1.13.3) (2026-08-24)
+
+
+### Bug Fixes
+
+* **k8s:** opt the data volume into the nightly Velero backup ([09c5c8b](https://github.com/lukislp/UnifiProtectDashboard/commit/09c5c8b15ff32228c02d644e0944443c49de43c7))
+
 ## [1.13.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.1...v1.13.2) (2026-08-24)
 
 
