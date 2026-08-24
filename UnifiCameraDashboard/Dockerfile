@@ -54,9 +54,13 @@ EXPOSE 5003
 
 # Non-root runtime: the aspnet base image ships a dedicated "app" user and
 # exposes its numeric UID as $APP_UID (1654) - numeric so runAsNonRoot can be
-# verified. Nothing inside the image needs to be writable: the SQLite db and
-# thumbnails live on /data (a volume, chown-migrated by the Deployment's
-# initContainer), and DataProtection keys land in the app user's own home.
+# verified. /data is created app-owned IN the image so a fresh anonymous or
+# named volume inherits that ownership on first mount (plain `docker run` and
+# docker-compose work with no extra step - the CI smoke check runs exactly
+# that). Kubernetes PVCs don't inherit image ownership, which is what the
+# Deployment's chown initContainer is for. DataProtection keys land in the
+# app user's own home.
+RUN mkdir -p /data && chown $APP_UID:$APP_UID /data
 USER $APP_UID
 
 ENTRYPOINT ["dotnet", "UnifiCameraDashboard.dll"]
