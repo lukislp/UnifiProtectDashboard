@@ -68,7 +68,7 @@ spec:
         - name: unifiprotectdashboard
           # Flux-managed (see k8s/flux-deploy/) - the studylife repo's ImageUpdateAutomation
           # bumps this tag automatically on every new GHCR release, matched via this marker.
-          image: ghcr.io/lukislp/unifiprotectdashboard:1.13.0 # {"$imagepolicy": "flux-system:unifiprotectdashboard"}
+          image: ghcr.io/lukislp/unifiprotectdashboard:1.13.2 # {"$imagepolicy": "flux-system:unifiprotectdashboard"}
           env:
             - name: DATA_DIR
               value: /data
