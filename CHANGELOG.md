@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.0...v1.13.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* run as non-root ([7d23597](https://github.com/lukislp/UnifiProtectDashboard/commit/7d2359710e6918501b5c975da4e7a027c9202978))
+
 # [1.13.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.12.0...v1.13.0) (2026-08-22)
 
 
