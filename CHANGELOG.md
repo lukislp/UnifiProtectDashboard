@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.1...v1.13.2) (2026-08-24)
+
+
+### Bug Fixes
+
+* create /data app-owned in the image ([83f4366](https://github.com/lukislp/UnifiProtectDashboard/commit/83f436601adc98a0d0c5089d27cfeaf056713337))
+
 ## [1.13.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.0...v1.13.1) (2026-08-24)
 
 
