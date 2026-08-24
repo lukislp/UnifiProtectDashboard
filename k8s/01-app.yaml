@@ -52,6 +52,18 @@ spec:
       # Pinned to the real 8GB node this measurement is about - not left to the scheduler.
       nodeSelector:
         kubernetes.io/hostname: pinode02
+      initContainers:
+        # The PVC's data (SQLite db, encryption key, thumbnails) was written
+        # by the image's root era; chown on every start - idempotent - so the
+        # non-root app below can keep writing it. The only root in the pod.
+        - name: fix-data-ownership
+          image: busybox:1.36.1
+          command: ["chown", "-R", "1654:1654", "/data"]
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /data
       containers:
         - name: unifiprotectdashboard
           # Flux-managed (see k8s/flux-deploy/) - the studylife repo's ImageUpdateAutomation
@@ -64,6 +76,15 @@ spec:
               value: http://+:5003
             - name: ASPNETCORE_ENVIRONMENT
               value: Production
+          # The image runs as the aspnet base image's built-in app user (1654)
+          # since the same-named Dockerfile change; declared here so the
+          # posture is enforced, not incidental.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1654
+            allowPrivilegeEscalation: false
+            capabilities: {drop: ["ALL"]}
+            seccompProfile: {type: RuntimeDefault}
           ports:
             - containerPort: 5003
           resources:
