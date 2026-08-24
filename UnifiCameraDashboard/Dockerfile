@@ -52,4 +52,11 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 VOLUME ["/data"]
 EXPOSE 5003
 
+# Non-root runtime: the aspnet base image ships a dedicated "app" user and
+# exposes its numeric UID as $APP_UID (1654) - numeric so runAsNonRoot can be
+# verified. Nothing inside the image needs to be writable: the SQLite db and
+# thumbnails live on /data (a volume, chown-migrated by the Deployment's
+# initContainer), and DataProtection keys land in the app user's own home.
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "UnifiCameraDashboard.dll"]
