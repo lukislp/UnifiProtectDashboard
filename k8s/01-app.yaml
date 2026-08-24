@@ -48,6 +48,12 @@ spec:
   template:
     metadata:
       labels: {app: unifiprotectdashboard}
+      annotations:
+        # Opt-in to homelab-infra's nightly Velero PVC backup (cluster/10-velero-values.yaml
+        # there): /data holds dashboard.db plus enc.key (encrypts the stored UniFi
+        # credentials) and vapid-keys.json (push subscriptions) - the two key files are
+        # irreplaceable, without them it's a full re-setup including every push subscriber.
+        backup.velero.io/backup-volumes: data
     spec:
       # Pinned to the real 8GB node this measurement is about - not left to the scheduler.
       nodeSelector:
