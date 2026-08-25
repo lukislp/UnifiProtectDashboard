@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.3...v1.14.0) (2026-08-25)
+
+
+### Features
+
+* move data volume to Longhorn RWX for cross-node replication ([55c9f33](https://github.com/lukislp/UnifiProtectDashboard/commit/55c9f33f3dfd7a3dc355b4343f875330590b7e1a))
+
 ## [1.13.3](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.2...v1.13.3) (2026-08-24)
 
 
