@@ -15,7 +15,16 @@ metadata:
   name: unifiprotectdashboard-data
   namespace: unifiprotectdashboard
 spec:
-  accessModes: ["ReadWriteOnce"]
+  # ReadWriteMany + Longhorn (NFS-backed share-manager, cross-node-replicated, see
+  # homelab-infra/cluster/11-longhorn-values.yaml) instead of local-path's RWO. local-path's
+  # RWO was only node-scoped (not truly pod-exclusive), which the RollingUpdate strategy
+  # below relies on to let the surge pod mount concurrently with the outgoing one - Longhorn's
+  # RWO enforces single-pod-exclusive, so it would break that overlap. RWX replicates the same
+  # concurrent-mount behavior properly (even across nodes, not just same-node), and the app's
+  # own InstanceLock (Services/InstanceLock.cs) already handles single-writer safety
+  # independent of the storage layer either way.
+  accessModes: ["ReadWriteMany"]
+  storageClassName: longhorn
   resources:
     requests: {storage: 2Gi}
 ---
