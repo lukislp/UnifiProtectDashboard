@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.0...v1.14.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* **ci:** add Dependabot for github-actions, nuget, docker ([cc9576c](https://github.com/lukislp/UnifiProtectDashboard/commit/cc9576c3ea2919d8e50fce93ead3c8c2b3172051))
+
 # [1.14.0](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.13.3...v1.14.0) (2026-08-25)
 
 
