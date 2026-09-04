@@ -1,3 +1,11 @@
+## [1.14.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.1...v1.14.2) (2026-09-04)
+
+
+### Bug Fixes
+
+* **ci:** bump aquasecurity/trivy-action ([1b268e1](https://github.com/lukislp/UnifiProtectDashboard/commit/1b268e142ab5ed015b755b118c373d24ff0aa6e0))
+* **ci:** bump docker/setup-buildx-action from 4.2.0 to 4.3.0 ([ca0e76e](https://github.com/lukislp/UnifiProtectDashboard/commit/ca0e76e908ae4eb978ca3c1b5750e08103346e9a))
+
 ## [1.14.1](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.0...v1.14.1) (2026-09-03)
 
 
