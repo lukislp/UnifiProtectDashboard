@@ -44,6 +44,15 @@ public class FfmpegService : IFfmpegService, IDisposable
 
     public async Task<string?> StartHlsStreamAsync(string cameraId, string rtspUrl)
     {
+        // The camera id arrives straight from the request route, so the output directory is
+        // confined to the HLS base directory before anything touches the disk.
+        var outputDir = SafePath.CombineUnder(_outputBaseDir, cameraId);
+        if (outputDir == null)
+        {
+            _logger.LogWarning("Rejected HLS stream request for invalid camera id: {CameraId}", cameraId);
+            return null;
+        }
+
         if (_activeStreams.TryGetValue(cameraId, out var existingStream))
         {
             if (existingStream.IsRunning)
@@ -65,7 +74,6 @@ public class FfmpegService : IFfmpegService, IDisposable
                 return existingStream.PlaylistPath;
             }
 
-            var outputDir = Path.Combine(_outputBaseDir, cameraId);
             Directory.CreateDirectory(outputDir);
 
             var playlistFile = Path.Combine(outputDir, "stream.m3u8");
@@ -263,8 +271,8 @@ public class FfmpegService : IFfmpegService, IDisposable
                     streamInfo.Process.Dispose();
                 }
 
-                var outputDir = Path.Combine(_outputBaseDir, cameraId);
-                if (Directory.Exists(outputDir))
+                var outputDir = SafePath.CombineUnder(_outputBaseDir, cameraId);
+                if (outputDir != null && Directory.Exists(outputDir))
                 {
                     try
                     {

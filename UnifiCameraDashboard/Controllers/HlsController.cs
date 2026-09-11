@@ -239,7 +239,12 @@ public class HlsController : ControllerBase
         try
         {
             var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var hlsDir = Path.Combine(wwwroot, "hls", cameraId);
+            var hlsDir = SafePath.CombineUnder(Path.Combine(wwwroot, "hls"), cameraId);
+            if (hlsDir == null)
+            {
+                return BadRequest("Invalid camera id");
+            }
+
             var playlistFile = Path.Combine(hlsDir, "stream.m3u8");
 
             object? files = null;
@@ -285,7 +290,11 @@ public class HlsController : ControllerBase
         try
         {
             var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var playlistFile = Path.Combine(wwwroot, "hls", cameraId, "stream.m3u8");
+            var playlistFile = SafePath.CombineUnder(Path.Combine(wwwroot, "hls"), cameraId, "stream.m3u8");
+            if (playlistFile == null)
+            {
+                return NotFound(new { error = "Playlist not found" });
+            }
 
             _logger.LogInformation("HLS Playlist Request: {CameraId} -> {File}", cameraId, playlistFile);
 
@@ -323,7 +332,11 @@ public class HlsController : ControllerBase
             }
 
             var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var segmentFile = Path.Combine(wwwroot, "hls", cameraId, filename);
+            var segmentFile = SafePath.CombineUnder(Path.Combine(wwwroot, "hls"), cameraId, filename);
+            if (segmentFile == null)
+            {
+                return NotFound(new { error = "Segment not found" });
+            }
 
             _logger.LogDebug("HLS Segment Request: {CameraId}/{Filename} -> {File}", cameraId, filename, segmentFile);
 
