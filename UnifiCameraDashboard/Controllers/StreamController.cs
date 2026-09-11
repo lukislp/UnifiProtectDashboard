@@ -46,7 +46,7 @@ public class StreamController : ControllerBase
             const int maxConsecutiveErrors = 10;
 
             _logger.LogInformation("MJPEG stream started for camera {CameraId} at {Width}x{Height} @ {Fps} FPS",
-                cameraId, width?.ToString() ?? "native", height?.ToString() ?? "native", fps);
+                LogRedaction.ForLog(cameraId), width?.ToString() ?? "native", height?.ToString() ?? "native", fps);
 
             while (!cancellationToken.IsCancellationRequested && consecutiveErrors < maxConsecutiveErrors)
             {
@@ -90,7 +90,7 @@ public class StreamController : ControllerBase
                 catch (Exception ex)
                 {
                     consecutiveErrors++;
-                    _logger.LogDebug(ex, "Error during MJPEG frame fetch for camera {CameraId}", cameraId);
+                    _logger.LogDebug(ex, "Error during MJPEG frame fetch for camera {CameraId}", LogRedaction.ForLog(cameraId));
                     if (lastValidFrame != null)
                     {
                         try { await SendFrameAsync(lastValidFrame, cancellationToken); } catch { }
@@ -99,11 +99,11 @@ public class StreamController : ControllerBase
                 }
             }
 
-            _logger.LogInformation("MJPEG stream ended for camera {CameraId}", cameraId);
+            _logger.LogInformation("MJPEG stream ended for camera {CameraId}", LogRedaction.ForLog(cameraId));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in MJPEG stream for camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error in MJPEG stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
         }
     }
 

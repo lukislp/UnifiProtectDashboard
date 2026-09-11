@@ -49,7 +49,7 @@ public class FfmpegService : IFfmpegService, IDisposable
         var outputDir = SafePath.CombineUnder(_outputBaseDir, cameraId);
         if (outputDir == null)
         {
-            _logger.LogWarning("Rejected HLS stream request for invalid camera id: {CameraId}", cameraId);
+            _logger.LogWarning("Rejected HLS stream request for invalid camera id: {CameraId}", LogRedaction.ForLog(cameraId));
             return null;
         }
 
@@ -57,7 +57,7 @@ public class FfmpegService : IFfmpegService, IDisposable
         {
             if (existingStream.IsRunning)
             {
-                _logger.LogInformation("HLS stream for camera {CameraId} is already running", cameraId);
+                _logger.LogInformation("HLS stream for camera {CameraId} is already running", LogRedaction.ForLog(cameraId));
                 return existingStream.PlaylistPath;
             }
             else
@@ -83,7 +83,7 @@ public class FfmpegService : IFfmpegService, IDisposable
 
             if (!Directory.Exists(outputDir))
             {
-                _logger.LogError("Output directory could not be created: {Dir}", outputDir);
+                _logger.LogError("Output directory could not be created: {Dir}", LogRedaction.ForLog(outputDir));
                 return null;
             }
 
@@ -92,22 +92,22 @@ public class FfmpegService : IFfmpegService, IDisposable
             {
                 File.WriteAllText(testFile, "test");
                 File.Delete(testFile);
-                _logger.LogDebug("Write access to {Dir} confirmed", outputDir);
+                _logger.LogDebug("Write access to {Dir} confirmed", LogRedaction.ForLog(outputDir));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "No write access to {Dir}", outputDir);
+                _logger.LogError(ex, "No write access to {Dir}", LogRedaction.ForLog(outputDir));
                 return null;
             }
 
             var arguments = BuildFfmpegArguments(rtspUrl, playlistFile, segmentPattern);
 
-            _logger.LogInformation("Starting HLS stream for camera {CameraId}", cameraId);
+            _logger.LogInformation("Starting HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
             // The RTSP URL carries the Protect password inline - never log it verbatim.
             _logger.LogDebug("FFmpeg Command: {FFmpegPath} {Args}", _ffmpegPath,
                 LogRedaction.RedactUrlCredentials(string.Join(' ', arguments)));
-            _logger.LogDebug("Output Directory: {OutputDir}", outputDir);
-            _logger.LogDebug("Playlist File: {File}", playlistFile);
+            _logger.LogDebug("Output Directory: {OutputDir}", LogRedaction.ForLog(outputDir));
+            _logger.LogDebug("Playlist File: {File}", LogRedaction.ForLog(playlistFile));
 
             var startInfo = new ProcessStartInfo
             {
@@ -131,7 +131,7 @@ public class FfmpegService : IFfmpegService, IDisposable
                       {
                           if (!string.IsNullOrEmpty(e.Data))
                           {
-                              _logger.LogInformation("FFmpeg [{CameraId}] Output: {Data}", cameraId, e.Data);
+                              _logger.LogInformation("FFmpeg [{CameraId}] Output: {Data}", LogRedaction.ForLog(cameraId), LogRedaction.ForLog(e.Data));
                           }
                       };
 
@@ -139,7 +139,7 @@ public class FfmpegService : IFfmpegService, IDisposable
        {
            if (!string.IsNullOrEmpty(e.Data))
            {
-               _logger.LogInformation("FFmpeg [{CameraId}] Stderr: {Data}", cameraId, e.Data);
+               _logger.LogInformation("FFmpeg [{CameraId}] Stderr: {Data}", LogRedaction.ForLog(cameraId), LogRedaction.ForLog(e.Data));
            }
        };
 
@@ -158,12 +158,12 @@ public class FfmpegService : IFfmpegService, IDisposable
                 if (!playlistExists && File.Exists(playlistFile))
                 {
                     playlistExists = true;
-                    _logger.LogInformation("Playlist file created: {File}", playlistFile);
+                    _logger.LogInformation("Playlist file created: {File}", LogRedaction.ForLog(playlistFile));
 
                     try
                     {
                         var content = File.ReadAllText(playlistFile);
-                        _logger.LogDebug("Playlist Inhalt:\n{Content}", content);
+                        _logger.LogDebug("Playlist Inhalt:\n{Content}", LogRedaction.ForLog(content));
                     }
                     catch { }
                 }
@@ -180,7 +180,7 @@ public class FfmpegService : IFfmpegService, IDisposable
 
                 if (playlistExists && segmentExists)
                 {
-                    _logger.LogInformation("HLS stream ready for camera {CameraId}", cameraId);
+                    _logger.LogInformation("HLS stream ready for camera {CameraId}", LogRedaction.ForLog(cameraId));
                     break;
                 }
 
@@ -193,7 +193,7 @@ public class FfmpegService : IFfmpegService, IDisposable
 
             if (!playlistExists)
             {
-                _logger.LogError("Playlist file was not created: {File}", playlistFile);
+                _logger.LogError("Playlist file was not created: {File}", LogRedaction.ForLog(playlistFile));
                 process.Kill(true);
                 return null;
             }
@@ -215,13 +215,13 @@ public class FfmpegService : IFfmpegService, IDisposable
             _activeStreams[cameraId] = streamInfo;
 
             _logger.LogInformation("HLS stream started for camera {CameraId}, playlist: {Path}",
-           cameraId, streamInfo.PlaylistPath);
+           LogRedaction.ForLog(cameraId), LogRedaction.ForLog(streamInfo.PlaylistPath));
 
             return streamInfo.PlaylistPath;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error starting HLS stream for camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error starting HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
             return null;
         }
         finally
@@ -267,7 +267,7 @@ public class FfmpegService : IFfmpegService, IDisposable
             {
                 if (streamInfo.Process != null && !streamInfo.Process.HasExited)
                 {
-                    _logger.LogInformation("Stopping HLS stream for camera {CameraId}", cameraId);
+                    _logger.LogInformation("Stopping HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
                     streamInfo.Process.Kill(true);
                     streamInfo.Process.WaitForExit(5000);
                     streamInfo.Process.Dispose();
@@ -282,13 +282,13 @@ public class FfmpegService : IFfmpegService, IDisposable
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Could not delete directory: {Dir}", outputDir);
+                        _logger.LogWarning(ex, "Could not delete directory: {Dir}", LogRedaction.ForLog(outputDir));
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error stopping HLS stream for camera {CameraId}", cameraId);
+                _logger.LogError(ex, "Error stopping HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
             }
         }
     }
