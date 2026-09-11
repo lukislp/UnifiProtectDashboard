@@ -95,22 +95,27 @@ public class FfmpegService : IFfmpegService, IDisposable
             var arguments = BuildFfmpegArguments(rtspUrl, playlistFile, segmentPattern);
 
             _logger.LogInformation("Starting HLS stream for camera {CameraId}", cameraId);
-            _logger.LogDebug("FFmpeg Command: {FFmpegPath} {Args}", _ffmpegPath, arguments);
+            _logger.LogDebug("FFmpeg Command: {FFmpegPath} {Args}", _ffmpegPath, string.Join(' ', arguments));
             _logger.LogDebug("Output Directory: {OutputDir}", outputDir);
             _logger.LogDebug("Playlist File: {File}", playlistFile);
 
-            var process = new Process
+            var startInfo = new ProcessStartInfo
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = _ffmpegPath,
-                    Arguments = arguments,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                }
+                FileName = _ffmpegPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
             };
+
+            // ArgumentList passes each argument to the process verbatim, so a hostile camera id
+            // or RTSP URL cannot smuggle in extra ffmpeg options.
+            foreach (var argument in arguments)
+            {
+                startInfo.ArgumentList.Add(argument);
+            }
+
+            var process = new Process { StartInfo = startInfo };
 
             process.OutputDataReceived += (sender, e) =>
                       {
@@ -215,28 +220,33 @@ public class FfmpegService : IFfmpegService, IDisposable
         }
     }
 
-    private string BuildFfmpegArguments(string rtspUrl, string playlistFile, string segmentPattern)
+    private static IReadOnlyList<string> BuildFfmpegArguments(string rtspUrl, string playlistFile, string segmentPattern)
     {
-        return $@"-rtsp_transport tcp " +
-               $@"-rtsp_flags prefer_tcp " +
-    $@"-allowed_media_types video+audio " +
-          $@"-fflags +genpts+discardcorrupt " +
-               $@"-use_wallclock_as_timestamps 1 " +
-    $@"-timeout 5000000 " +
-    $@"-i ""{rtspUrl}"" " +
- $@"-c:v copy " +
-   $@"-c:a aac -b:a 128k -ar 44100 " +
-           $@"-f hls " +
-   $@"-hls_time 2 " +
-     $@"-hls_list_size 10 " +
-    $@"-hls_flags delete_segments+omit_endlist " +
-       $@"-hls_segment_type mpegts " +
-   $@"-hls_segment_filename ""{segmentPattern}"" " +
-   $@"-start_number 0 " +
-               $@"-hls_allow_cache 0 " +
-       $@"-loglevel warning " +
-            $@"-y " +
-    $@"""{playlistFile}""";
+        return
+        [
+            "-rtsp_transport", "tcp",
+            "-rtsp_flags", "prefer_tcp",
+            "-allowed_media_types", "video+audio",
+            "-fflags", "+genpts+discardcorrupt",
+            "-use_wallclock_as_timestamps", "1",
+            "-timeout", "5000000",
+            "-i", rtspUrl,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "-ar", "44100",
+            "-f", "hls",
+            "-hls_time", "2",
+            "-hls_list_size", "10",
+            "-hls_flags", "delete_segments+omit_endlist",
+            "-hls_segment_type", "mpegts",
+            "-hls_segment_filename", segmentPattern,
+            "-start_number", "0",
+            "-hls_allow_cache", "0",
+            "-loglevel", "warning",
+            "-y",
+            playlistFile
+        ];
     }
 
     public void StopHlsStream(string cameraId)
