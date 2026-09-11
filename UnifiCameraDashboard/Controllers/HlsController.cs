@@ -57,7 +57,9 @@ public class HlsController : ControllerBase
 
             _logger.LogInformation("Starting HLS stream for camera {Name} ({Id}), Channel: {Channel}",
                 camera.Name, cameraId, channel);
-            _logger.LogInformation("RTSP URL (from DB): {RtspUrl}", rtspUrl.Replace(":", "***").Substring(0, Math.Min(50, rtspUrl.Length)) + "...");
+            // The RTSP URL embeds the Protect password - strip the credentials, don't just
+            // mangle the colons (that left the password readable in the log).
+            _logger.LogInformation("RTSP URL (from DB): {RtspUrl}", LogRedaction.RedactUrlCredentials(rtspUrl));
 
             var playlistPath = await _ffmpegService.StartHlsStreamAsync(cameraId, rtspUrl);
 

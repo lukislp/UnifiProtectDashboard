@@ -103,7 +103,9 @@ public class FfmpegService : IFfmpegService, IDisposable
             var arguments = BuildFfmpegArguments(rtspUrl, playlistFile, segmentPattern);
 
             _logger.LogInformation("Starting HLS stream for camera {CameraId}", cameraId);
-            _logger.LogDebug("FFmpeg Command: {FFmpegPath} {Args}", _ffmpegPath, string.Join(' ', arguments));
+            // The RTSP URL carries the Protect password inline - never log it verbatim.
+            _logger.LogDebug("FFmpeg Command: {FFmpegPath} {Args}", _ffmpegPath,
+                LogRedaction.RedactUrlCredentials(string.Join(' ', arguments)));
             _logger.LogDebug("Output Directory: {OutputDir}", outputDir);
             _logger.LogDebug("Playlist File: {File}", playlistFile);
 
