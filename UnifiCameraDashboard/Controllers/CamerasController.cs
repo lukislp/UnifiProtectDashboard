@@ -35,7 +35,6 @@ public class CamerasController : ControllerBase
                 isOnline = c.IsOnline,
                 width = c.Width,
                 height = c.Height,
-                rtspUrl = c.RtspUrl,
                 snapshotUrl = $"/api/snapshot/{c.Id}"
             }).ToList();
 
@@ -74,7 +73,6 @@ public class CamerasController : ControllerBase
                 isOnline = camera.IsOnline,
                 width = camera.Width,
                 height = camera.Height,
-                rtspUrl = camera.RtspUrl,
                 snapshotUrl = $"/api/snapshot/{camera.Id}"
             };
 

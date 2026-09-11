@@ -38,8 +38,7 @@ public class DiscoveryController : ControllerBase
                     c.MacAddress,
                     c.Model,
                     c.IsOnline,
-                    c.SnapshotUrl,
-                    c.RtspUrl
+                    c.SnapshotUrl
                 })
             });
         }
