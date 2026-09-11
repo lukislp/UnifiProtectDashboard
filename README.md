@@ -1,6 +1,6 @@
 # UniFi Camera Dashboard
 
-[![CI/CD](https://github.com/lukislp/UnifiProtectDashboard/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/lukislp/UnifiProtectDashboard/actions/workflows/ci-cd.yml)
+[![CI/CD](https://github.com/lukislp/UnifiProtectDashboard/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/lukislp/UnifiProtectDashboard/actions/workflows/ci-cd.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lukislp/UnifiProtectDashboard/badge)](https://scorecard.dev/viewer/?uri=github.com/lukislp/UnifiProtectDashboard) [![CodeQL](https://github.com/lukislp/UnifiProtectDashboard/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/lukislp/UnifiProtectDashboard/security/code-scanning)
 [![Release](https://img.shields.io/github/v/release/lukislp/UnifiProtectDashboard)](https://github.com/lukislp/UnifiProtectDashboard/releases)
 [![License: MIT](https://img.shields.io/github/license/lukislp/UnifiProtectDashboard)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
