@@ -1,3 +1,10 @@
+## [1.14.5](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.4...v1.14.5) (2026-09-11)
+
+
+### Bug Fixes
+
+* **ci:** read-only GITHUB_TOKEN in the Dependabot auto-merge workflow ([788c34a](https://github.com/lukislp/UnifiProtectDashboard/commit/788c34ad61a90473997a18df939264ef60ac04e0))
+
 ## [1.14.4](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.3...v1.14.4) (2026-09-11)
 
 
