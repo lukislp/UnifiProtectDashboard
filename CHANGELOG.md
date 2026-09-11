@@ -1,3 +1,10 @@
+## [1.14.6](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.5...v1.14.6) (2026-09-11)
+
+
+### Bug Fixes
+
+* **api:** stop returning RTSP credentials and server paths to the browser ([#35](https://github.com/lukislp/UnifiProtectDashboard/issues/35)) ([7ec44ed](https://github.com/lukislp/UnifiProtectDashboard/commit/7ec44ed37514ff907d17b438814d7d379b0d6315))
+
 ## [1.14.5](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.4...v1.14.5) (2026-09-11)
 
 
