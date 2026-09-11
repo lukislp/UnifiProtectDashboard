@@ -1,3 +1,10 @@
+## [1.14.3](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.2...v1.14.3) (2026-09-11)
+
+
+### Bug Fixes
+
+* **ci:** push release commits as a deploy key so the default branch can be ruleset-protected ([8a4d5e3](https://github.com/lukislp/UnifiProtectDashboard/commit/8a4d5e3f50c5e193bf25ff0a406aa4202387aef2))
+
 ## [1.14.2](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.1...v1.14.2) (2026-09-04)
 
 
