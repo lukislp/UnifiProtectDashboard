@@ -126,7 +126,8 @@ public class HlsController : ControllerBase
                 streams = activeStreams.Select(kvp => new
                 {
                     cameraId = kvp.Key,
-                    rtspUrl = kvp.Value.RtspUrl,
+                    // The stored RTSP URL embeds the Protect password - never hand it to the browser.
+                    rtspUrl = UrlCredentials.Strip(kvp.Value.RtspUrl),
                     playlistPath = kvp.Value.PlaylistPath,
                     startTime = kvp.Value.StartTime,
                     uptime = DateTime.Now - kvp.Value.StartTime,
@@ -303,7 +304,7 @@ public class HlsController : ControllerBase
             if (!System.IO.File.Exists(playlistFile))
             {
                 _logger.LogWarning("Playlist not found: {File}", LogRedaction.ForLog(playlistFile));
-                return NotFound(new { error = "Playlist not found", file = playlistFile });
+                return NotFound(new { error = "Playlist not found" });
             }
 
             // Read playlist and log content
@@ -345,7 +346,7 @@ public class HlsController : ControllerBase
             if (!System.IO.File.Exists(segmentFile))
             {
                 _logger.LogWarning("Segment not found: {File}", LogRedaction.ForLog(segmentFile));
-                return NotFound(new { error = "Segment not found", file = segmentFile });
+                return NotFound(new { error = "Segment not found" });
             }
 
             return PhysicalFile(segmentFile, "video/MP2T", enableRangeProcessing: true);
