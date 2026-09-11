@@ -1,3 +1,10 @@
+## [1.14.4](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.3...v1.14.4) (2026-09-11)
+
+
+### Bug Fixes
+
+* resolve CodeQL findings ([#33](https://github.com/lukislp/UnifiProtectDashboard/issues/33)) ([838df09](https://github.com/lukislp/UnifiProtectDashboard/commit/838df09ca9a090d74abd04048ca7a0db8273da22))
+
 ## [1.14.3](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.2...v1.14.3) (2026-09-11)
 
 
