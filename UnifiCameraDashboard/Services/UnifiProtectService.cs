@@ -667,7 +667,7 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
             // Session expired — force re-auth once and retry (401 Unauthorized only)
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                _logger.LogWarning("Snapshot 401 for camera {CameraId} — forcing re-auth", cameraId);
+                _logger.LogWarning("Snapshot 401 for camera {CameraId} — forcing re-auth", LogRedaction.ForLog(cameraId));
                 _isAuthenticated = false;
 
                 await _authLock.WaitAsync();
@@ -706,7 +706,7 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Snapshot failed for camera {CameraId}: {Status}", cameraId, response.StatusCode);
+                _logger.LogWarning("Snapshot failed for camera {CameraId}: {Status}", LogRedaction.ForLog(cameraId), response.StatusCode);
                 return null;
             }
 
@@ -716,7 +716,7 @@ public class UnifiProtectService : IUnifiProtectService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading snapshot for camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error loading snapshot for camera {CameraId}", LogRedaction.ForLog(cameraId));
             return null;
         }
     }

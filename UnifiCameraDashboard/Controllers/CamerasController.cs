@@ -82,7 +82,7 @@ public class CamerasController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving camera {CameraId}", id);
+            _logger.LogError(ex, "Error retrieving camera {CameraId}", LogRedaction.ForLog(id));
             return StatusCode(500, new { error = "Error loading camera" });
         }
     }

@@ -124,7 +124,7 @@ public class UnifiCameraService : IUnifiCameraService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error retrieving camera {CameraId}", LogRedaction.ForLog(cameraId));
             return null;
         }
     }

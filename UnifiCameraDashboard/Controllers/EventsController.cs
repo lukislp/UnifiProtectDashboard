@@ -76,7 +76,7 @@ public class EventsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving thumbnail for event {EventId}", id);
+            _logger.LogError(ex, "Error retrieving thumbnail for event {EventId}", LogRedaction.ForLog(id));
             return StatusCode(500, new { error = "Error loading thumbnail" });
         }
     }

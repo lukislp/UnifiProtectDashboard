@@ -24,7 +24,7 @@ public class SnapshotController : ControllerBase
 
         if (result == null)
         {
-            _logger.LogWarning("Snapshot for camera {CameraId} could not be loaded", cameraId);
+            _logger.LogWarning("Snapshot for camera {CameraId} could not be loaded", LogRedaction.ForLog(cameraId));
             return StatusCode(503, "Snapshot not available");
         }
 

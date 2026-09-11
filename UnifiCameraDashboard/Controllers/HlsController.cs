@@ -56,8 +56,10 @@ public class HlsController : ControllerBase
             }
 
             _logger.LogInformation("Starting HLS stream for camera {Name} ({Id}), Channel: {Channel}",
-                camera.Name, cameraId, channel);
-            _logger.LogInformation("RTSP URL (from DB): {RtspUrl}", rtspUrl.Replace(":", "***").Substring(0, Math.Min(50, rtspUrl.Length)) + "...");
+                LogRedaction.ForLog(camera.Name), LogRedaction.ForLog(cameraId), channel);
+            // The RTSP URL embeds the Protect password - strip the credentials, don't just
+            // mangle the colons (that left the password readable in the log).
+            _logger.LogInformation("RTSP URL (from DB): {RtspUrl}", LogRedaction.RedactUrlCredentials(rtspUrl));
 
             var playlistPath = await _ffmpegService.StartHlsStreamAsync(cameraId, rtspUrl);
 
@@ -77,7 +79,7 @@ public class HlsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error starting HLS stream for camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error starting HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -90,7 +92,7 @@ public class HlsController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("Stopping HLS stream for camera {CameraId}", cameraId);
+            _logger.LogInformation("Stopping HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
             _ffmpegService.StopHlsStream(cameraId);
 
             return Ok(new
@@ -102,7 +104,7 @@ public class HlsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error stopping HLS stream for camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error stopping HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -239,7 +241,12 @@ public class HlsController : ControllerBase
         try
         {
             var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var hlsDir = Path.Combine(wwwroot, "hls", cameraId);
+            var hlsDir = SafePath.CombineUnder(Path.Combine(wwwroot, "hls"), cameraId);
+            if (hlsDir == null)
+            {
+                return BadRequest("Invalid camera id");
+            }
+
             var playlistFile = Path.Combine(hlsDir, "stream.m3u8");
 
             object? files = null;
@@ -271,7 +278,7 @@ public class HlsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during debug for camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error during debug for camera {CameraId}", LogRedaction.ForLog(cameraId));
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -285,25 +292,29 @@ public class HlsController : ControllerBase
         try
         {
             var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var playlistFile = Path.Combine(wwwroot, "hls", cameraId, "stream.m3u8");
+            var playlistFile = SafePath.CombineUnder(Path.Combine(wwwroot, "hls"), cameraId, "stream.m3u8");
+            if (playlistFile == null)
+            {
+                return NotFound(new { error = "Playlist not found" });
+            }
 
-            _logger.LogInformation("HLS Playlist Request: {CameraId} -> {File}", cameraId, playlistFile);
+            _logger.LogInformation("HLS Playlist Request: {CameraId} -> {File}", LogRedaction.ForLog(cameraId), LogRedaction.ForLog(playlistFile));
 
             if (!System.IO.File.Exists(playlistFile))
             {
-                _logger.LogWarning("Playlist not found: {File}", playlistFile);
+                _logger.LogWarning("Playlist not found: {File}", LogRedaction.ForLog(playlistFile));
                 return NotFound(new { error = "Playlist not found", file = playlistFile });
             }
 
             // Read playlist and log content
             var content = System.IO.File.ReadAllText(playlistFile);
-            _logger.LogDebug("Playlist content:\n{Content}", content);
+            _logger.LogDebug("Playlist content:\n{Content}", LogRedaction.ForLog(content));
 
             return PhysicalFile(playlistFile, "application/vnd.apple.mpegurl", enableRangeProcessing: false);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error serving playlist for camera {CameraId}", cameraId);
+            _logger.LogError(ex, "Error serving playlist for camera {CameraId}", LogRedaction.ForLog(cameraId));
             return StatusCode(500, new { error = ex.Message });
         }
     }
@@ -323,13 +334,17 @@ public class HlsController : ControllerBase
             }
 
             var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-            var segmentFile = Path.Combine(wwwroot, "hls", cameraId, filename);
+            var segmentFile = SafePath.CombineUnder(Path.Combine(wwwroot, "hls"), cameraId, filename);
+            if (segmentFile == null)
+            {
+                return NotFound(new { error = "Segment not found" });
+            }
 
-            _logger.LogDebug("HLS Segment Request: {CameraId}/{Filename} -> {File}", cameraId, filename, segmentFile);
+            _logger.LogDebug("HLS Segment Request: {CameraId}/{Filename} -> {File}", LogRedaction.ForLog(cameraId), LogRedaction.ForLog(filename), LogRedaction.ForLog(segmentFile));
 
             if (!System.IO.File.Exists(segmentFile))
             {
-                _logger.LogWarning("Segment not found: {File}", segmentFile);
+                _logger.LogWarning("Segment not found: {File}", LogRedaction.ForLog(segmentFile));
                 return NotFound(new { error = "Segment not found", file = segmentFile });
             }
 
@@ -337,7 +352,7 @@ public class HlsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error serving segment {Filename} for camera {CameraId}", filename, cameraId);
+            _logger.LogError(ex, "Error serving segment {Filename} for camera {CameraId}", LogRedaction.ForLog(filename), LogRedaction.ForLog(cameraId));
             return StatusCode(500, new { error = ex.Message });
         }
     }

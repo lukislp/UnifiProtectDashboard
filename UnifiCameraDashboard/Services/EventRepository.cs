@@ -174,7 +174,7 @@ public class EventRepository : IEventRepository
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving event {UnifiEventId}", unifiEventId);
+            _logger.LogError(ex, "Error retrieving event {UnifiEventId}", LogRedaction.ForLog(unifiEventId));
             return null;
         }
     }
