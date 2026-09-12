@@ -1,3 +1,10 @@
+## [1.14.7](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.6...v1.14.7) (2026-09-12)
+
+
+### Bug Fixes
+
+* **ci:** bump the deployment image tag from the pipeline instead of Flux ([#38](https://github.com/lukislp/UnifiProtectDashboard/issues/38)) ([a98f935](https://github.com/lukislp/UnifiProtectDashboard/commit/a98f9359077dead0141fa6ca3a326ef9177df7a6))
+
 ## [1.14.6](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.5...v1.14.6) (2026-09-11)
 
 
