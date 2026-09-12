@@ -68,6 +68,20 @@ public class ProtectWebSocketFrameCodecPropertyTests
             : update.JsonData is null && update.RawData is not null && update.RawData.SequenceEqual(data);
     }
 
+    // The counterexample CI found on the first run: a JSON action payload that is a number.
+    [Theory]
+    [InlineData("0")]
+    [InlineData("[]")]
+    [InlineData("null")]
+    [InlineData("\"action\"")]
+    public void A_non_object_action_payload_is_a_malformed_frame(string actionJson)
+    {
+        var buffer = Frame(PacketTypeAction, FormatJson, false, Encoding.UTF8.GetBytes(actionJson))
+            .Concat(Frame(PacketTypeData, FormatJson, false, Encoding.UTF8.GetBytes("{}")))
+            .ToArray();
+        Assert.Throws<ProtectFrameFormatException>(() => ProtectWebSocketFrameCodec.Decode(buffer));
+    }
+
     private static bool DecodeIsWellBehaved(byte[] buffer)
     {
         try

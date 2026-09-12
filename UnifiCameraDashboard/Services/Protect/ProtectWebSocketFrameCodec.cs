@@ -161,6 +161,13 @@ public static class ProtectWebSocketFrameCodec
 
     private static ProtectActionFrame ParseActionFrame(JsonElement root)
     {
+        // Valid JSON is not necessarily an object ("0", "[]", "null"): TryGetProperty on those
+        // throws InvalidOperationException, which the websocket loop does not handle (found by
+        // the property tests on CI).
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            throw new ProtectFrameFormatException($"Action frame payload must be a JSON object, got {root.ValueKind}.");
+        }
         return new ProtectActionFrame(
             Action: RequireString(root, "action"),
             Id: RequireString(root, "id"),
