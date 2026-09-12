@@ -60,7 +60,7 @@ public static class ProtectWebSocketFrameCodec
             throw new ProtectFrameFormatException("Action frame payload must be JSON.");
         }
 
-        using var actionDoc = JsonDocument.Parse(actionPayload);
+        using var actionDoc = ParseJson(actionPayload, "Action");
         var actionRoot = actionDoc.RootElement.Clone();
         var action = ParseActionFrame(actionRoot);
 
@@ -76,7 +76,7 @@ public static class ProtectWebSocketFrameCodec
         switch (dataHeader.PayloadFormat)
         {
             case FormatJson:
-                using (var dataDoc = JsonDocument.Parse(dataPayload))
+                using (var dataDoc = ParseJson(dataPayload, "Data"))
                 {
                     jsonData = dataDoc.RootElement.Clone();
                 }
@@ -128,13 +128,35 @@ public static class ProtectWebSocketFrameCodec
         return (new FrameHeader(packetType, payloadFormat, deflated), payload, payloadStart + length);
     }
 
+    // Broken JSON or a bad zlib stream is a malformed frame like any other: the websocket loop
+    // only handles ProtectFrameFormatException, so anything else would take the whole
+    // connection down (found by the property tests).
+    private static JsonDocument ParseJson(byte[] payload, string frameName)
+    {
+        try
+        {
+            return JsonDocument.Parse(payload);
+        }
+        catch (JsonException ex)
+        {
+            throw new ProtectFrameFormatException($"{frameName} frame payload is not valid JSON: {ex.Message}");
+        }
+    }
+
     private static byte[] Inflate(byte[] compressed)
     {
-        using var input = new MemoryStream(compressed);
-        using var zlib = new ZLibStream(input, CompressionMode.Decompress);
-        using var output = new MemoryStream();
-        zlib.CopyTo(output);
-        return output.ToArray();
+        try
+        {
+            using var input = new MemoryStream(compressed);
+            using var zlib = new ZLibStream(input, CompressionMode.Decompress);
+            using var output = new MemoryStream();
+            zlib.CopyTo(output);
+            return output.ToArray();
+        }
+        catch (InvalidDataException ex)
+        {
+            throw new ProtectFrameFormatException($"Deflated frame payload is not a valid zlib stream: {ex.Message}");
+        }
     }
 
     private static ProtectActionFrame ParseActionFrame(JsonElement root)
