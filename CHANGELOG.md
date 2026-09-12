@@ -1,3 +1,11 @@
+## [1.14.8](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.7...v1.14.8) (2026-09-12)
+
+
+### Bug Fixes
+
+* **protect:** report broken JSON and bad zlib payloads as malformed frames ([#44](https://github.com/lukislp/UnifiProtectDashboard/issues/44)) ([849fdde](https://github.com/lukislp/UnifiProtectDashboard/commit/849fddee398cc09291dc7d8dd28b0cb711271885))
+* **protect:** treat a non-object JSON action payload as a malformed frame ([#45](https://github.com/lukislp/UnifiProtectDashboard/issues/45)) ([b252285](https://github.com/lukislp/UnifiProtectDashboard/commit/b252285959c1914411921d41809ceb74495a0d16))
+
 ## [1.14.7](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.6...v1.14.7) (2026-09-12)
 
 
