@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS build
 WORKDIR /src
 
-COPY ["UnifiCameraDashboard.csproj", "nuget.config", "./"]
+COPY ["UnifiCameraDashboard.csproj", "packages.lock.json", "nuget.config", "./"]
 
 # NotifyHub (github.com/lukislp/NotifyHub) isn't published to nuget.org - its GitHub Releases
 # attach real versioned nupkgs instead. Downloaded into the local feed nuget.config points at,
@@ -11,7 +11,8 @@ COPY ["UnifiCameraDashboard.csproj", "nuget.config", "./"]
 RUN mkdir -p nuget-packages && \
     curl -fsSL -o nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
 
-RUN dotnet restore "UnifiCameraDashboard.csproj"
+# --locked-mode: the restore must match the committed packages.lock.json exactly.
+RUN dotnet restore "UnifiCameraDashboard.csproj" --locked-mode
 
 COPY . .
 # No --no-restore here: the restore above ran before wwwroot existed in the build context
@@ -19,7 +20,7 @@ COPY . .
 # never saw any of this project's own static files - publishing with --no-restore against that
 # stale manifest silently drops the entire wwwroot output, including the Blazor framework
 # scripts (_framework/blazor.web.js), breaking all server-side interactivity at runtime.
-RUN dotnet publish "UnifiCameraDashboard.csproj" -c Release -o /app/publish
+RUN dotnet publish "UnifiCameraDashboard.csproj" -c Release -o /app/publish -p:RestoreLockedMode=true
 
 # ---- Runtime Stage ----
 FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:6a94333d37514e385650a3c81a55e5350b67253dbe136e9cf17e499c35606a8c AS final

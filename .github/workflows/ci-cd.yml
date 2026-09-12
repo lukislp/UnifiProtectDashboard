@@ -39,7 +39,7 @@ jobs:
         run: |
           mkdir -p UnifiCameraDashboard/nuget-packages
           curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
-      - run: dotnet restore UnifiCameraDashboard.sln
+      - run: dotnet restore UnifiCameraDashboard.sln --locked-mode
       - run: dotnet build UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-restore
       - run: dotnet test UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-build
 
@@ -79,7 +79,7 @@ jobs:
         run: |
           mkdir -p UnifiCameraDashboard/nuget-packages
           curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
-      - run: dotnet restore UnifiCameraDashboard.sln
+      - run: dotnet restore UnifiCameraDashboard.sln --locked-mode
       - run: |
           dotnet list UnifiCameraDashboard.sln package --vulnerable --include-transitive --format json > nuget-vulnerabilities.json
           cat nuget-vulnerabilities.json
