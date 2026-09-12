@@ -153,7 +153,10 @@ public static class ProtectWebSocketFrameCodec
             zlib.CopyTo(output);
             return output.ToArray();
         }
-        catch (InvalidDataException ex)
+        // InvalidDataException for a corrupt stream; the (internal) ZLibException, an IOException,
+        // when the native routine rejects it outright - a valid zlib header followed by garbage,
+        // found by the property tests. The source is a MemoryStream, so no other IOException occurs.
+        catch (Exception ex) when (ex is InvalidDataException or IOException)
         {
             throw new ProtectFrameFormatException($"Deflated frame payload is not a valid zlib stream: {ex.Message}");
         }

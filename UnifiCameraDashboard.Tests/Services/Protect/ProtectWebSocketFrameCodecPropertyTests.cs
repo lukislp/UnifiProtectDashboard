@@ -82,6 +82,18 @@ public class ProtectWebSocketFrameCodecPropertyTests
         Assert.Throws<ProtectFrameFormatException>(() => ProtectWebSocketFrameCodec.Decode(buffer));
     }
 
+    // The counterexample CI found on 2026-09-12: a deflated payload with a valid zlib header
+    // followed by garbage, which the native routine rejects with ZLibException instead of
+    // InvalidDataException.
+    [Fact]
+    public void A_deflated_payload_zlib_rejects_outright_is_a_malformed_frame()
+    {
+        var buffer = Frame(PacketTypeAction, 0, true, [40, 238, 0, 0, 0, 0])
+            .Concat(Frame(PacketTypeData, 0, false, []))
+            .ToArray();
+        Assert.Throws<ProtectFrameFormatException>(() => ProtectWebSocketFrameCodec.Decode(buffer));
+    }
+
     private static bool DecodeIsWellBehaved(byte[] buffer)
     {
         try
