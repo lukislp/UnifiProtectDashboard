@@ -1,3 +1,10 @@
+## [1.14.9](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.8...v1.14.9) (2026-09-12)
+
+
+### Bug Fixes
+
+* **ci:** put deploy-bump in the same release-chain concurrency group as the other jobs ([#47](https://github.com/lukislp/UnifiProtectDashboard/issues/47)) ([f017320](https://github.com/lukislp/UnifiProtectDashboard/commit/f0173207dbc9b3866341c480517b9bf7b5856426))
+
 ## [1.14.8](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.7...v1.14.8) (2026-09-12)
 
 
