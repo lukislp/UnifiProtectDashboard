@@ -1,3 +1,11 @@
+## [1.14.12](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.11...v1.14.12) (2026-09-13)
+
+
+### Bug Fixes
+
+* **k8s:** add explicit egress policies for the dashboard ([#57](https://github.com/lukislp/UnifiProtectDashboard/issues/57)) ([08f95e7](https://github.com/lukislp/UnifiProtectDashboard/commit/08f95e72f3152fd4630d97f09e750b3ddcb163c5))
+* **k8s:** drop the catch-all egress rule from allow-dns ([#58](https://github.com/lukislp/UnifiProtectDashboard/issues/58)) ([d0d98b5](https://github.com/lukislp/UnifiProtectDashboard/commit/d0d98b597d1ad92bd4abecbd16c4b215005caa0c))
+
 ## [1.14.11](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.10...v1.14.11) (2026-09-13)
 
 
