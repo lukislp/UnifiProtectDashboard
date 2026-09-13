@@ -1,6 +1,8 @@
-# Default-deny ingress baseline, egress stays open (this app calls out to the Protect console at
-# an arbitrary LAN IP - no fixed egress allowlist makes sense here). Same strategy as the sibling
-# apps' own network-policies files.
+# Default-deny in BOTH directions as the baseline, then explicit allowances - same strategy as
+# the sibling apps' own network-policies files. allow-dns used to carry a bare `{}` egress rule
+# next to the DNS one, which allowed egress anywhere and made the whole policy decorative; the
+# Protect console really does live at an arbitrary LAN address, but "the LAN subnet" is a rule
+# that can be written down (see unifiprotectdashboard-egress below), while "anywhere" is not.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -24,7 +26,6 @@ spec:
       ports:
         - { protocol: UDP, port: 53 }
         - { protocol: TCP, port: 53 }
-    - {} # egress otherwise unrestricted - this policy only adds an explicit DNS allowance
 ---
 # Lets the Gateway (NGF data plane, k8s/02-httproute.yaml) reach the pod.
 apiVersion: networking.k8s.io/v1
