@@ -1,3 +1,10 @@
+## [1.14.11](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.10...v1.14.11) (2026-09-13)
+
+
+### Bug Fixes
+
+* **k8s:** read-only root filesystem for unifiprotectdashboard ([#56](https://github.com/lukislp/UnifiProtectDashboard/issues/56)) ([afae6d2](https://github.com/lukislp/UnifiProtectDashboard/commit/afae6d27b1d3c26d0a7a86db419c3c9809e66293))
+
 ## [1.14.10](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.9...v1.14.10) (2026-09-13)
 
 
