@@ -1,3 +1,10 @@
+## [1.14.13](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.12...v1.14.13) (2026-09-13)
+
+
+### Bug Fixes
+
+* **k8s:** give probes a 5s timeout so load spikes stop killing pods ([#59](https://github.com/lukislp/UnifiProtectDashboard/issues/59)) ([9d040c1](https://github.com/lukislp/UnifiProtectDashboard/commit/9d040c148ced972e236d7f7d935a4609977bb0a2))
+
 ## [1.14.12](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.11...v1.14.12) (2026-09-13)
 
 
