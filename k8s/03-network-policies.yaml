@@ -40,3 +40,47 @@ spec:
         - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: nginx-gateway } }
       ports:
         - { protocol: TCP, port: 5003 }
+---
+# Explicit egress baseline for the whole namespace, mirroring claude-queue's k8s/07-netpol.yaml:
+# every pod is isolated for egress, so anything not allowed by a policy below is dropped once
+# the catch-all rule in allow-dns is gone.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: unifiprotectdashboard
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+---
+# Two outbound destinations, and only two:
+#
+#  1. The UniFi Protect console on the home LAN. Its address and credentials live in the app's
+#     own SQLite DB (entered via the Setup wizard, AES-encrypted with /data/enc.key), so this
+#     file cannot name a single host - and the traffic is not one port either: the Protect REST
+#     API and the event WebSocket run over HTTPS, camera streams over RTSPS on 7441/7447 and
+#     plain RTSP on 554 (see Services/*Rtsp*). The whole LAN subnet with no port restriction is
+#     the honest rule here: 192.168.20.0/24 is the only network the nodes are on
+#     (192.168.20.200/.95/.193) and the MetalLB pool (192.168.20.240-250) sits in it too.
+#  2. Web Push. Once push is configured (/data/vapid-keys.json) the app posts to whatever push
+#     service each subscriber's browser names - FCM, Apple, Mozilla - all HTTPS on 443 to
+#     addresses that change without notice, so the port is the restriction, not the address.
+#     Same trade-off claude-queue's api-egress makes for the Anthropic API.
+#
+# No in-cluster egress target: the store is SQLite on the PVC, there is no sidecar, no database
+# service and no Kubernetes API access.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: unifiprotectdashboard-egress
+  namespace: unifiprotectdashboard
+spec:
+  podSelector: { matchLabels: { app: unifiprotectdashboard } }
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - ipBlock: { cidr: 192.168.20.0/24 }
+    - to:
+        - ipBlock: { cidr: 0.0.0.0/0 }
+      ports:
+        - { protocol: TCP, port: 443 }
