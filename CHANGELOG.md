@@ -1,3 +1,10 @@
+## [1.14.10](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.9...v1.14.10) (2026-09-13)
+
+
+### Bug Fixes
+
+* **protect:** a zlib-rejected deflated frame is a malformed frame, not a crash ([#53](https://github.com/lukislp/UnifiProtectDashboard/issues/53)) ([b5c25e3](https://github.com/lukislp/UnifiProtectDashboard/commit/b5c25e374f4e344d32ce11554931df728c0af7ac))
+
 ## [1.14.9](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.8...v1.14.9) (2026-09-12)
 
 
