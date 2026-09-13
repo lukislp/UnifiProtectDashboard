@@ -113,14 +113,24 @@ spec:
             # this limit is a backstop, not the primary throttle.
             requests: {cpu: 250m, memory: 512Mi}
             limits: {cpu: 2000m, memory: 1536Mi}
+          # timeoutSeconds is set explicitly on both probes: the Kubernetes default of 1s is
+          # far too tight for a .NET app on a slow arm64 node that is close to its memory
+          # limit - under an ordinary load spike /api/ping needs more than a second, the
+          # liveness probe then fails failureThreshold times in a row and kubelet restarts the
+          # container. A 5s budget (and 5 consecutive failures for liveness) distinguishes a
+          # busy pod from a genuinely dead one.
           readinessProbe:
             httpGet: {path: /api/ping, port: 5003}
             initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           livenessProbe:
             httpGet: {path: /api/ping, port: 5003}
             initialDelaySeconds: 30
             periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 5
           volumeMounts:
             - name: data
               mountPath: /data
