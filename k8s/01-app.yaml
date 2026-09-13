@@ -76,6 +76,7 @@ spec:
           command: ["chown", "-R", "1654:1654", "/data"]
           securityContext:
             runAsUser: 0
+            readOnlyRootFilesystem: true
           volumeMounts:
             - name: data
               mountPath: /data
@@ -100,6 +101,10 @@ spec:
             allowPrivilegeEscalation: false
             capabilities: {drop: ["ALL"]}
             seccompProfile: {type: RuntimeDefault}
+            # The image layer itself is never written to at runtime: everything the app
+            # persists lives on the /data PVC. The two emptyDirs below cover the only other
+            # paths the .NET runtime writes to (see volumeMounts).
+            readOnlyRootFilesystem: true
           ports:
             - containerPort: 5003
           resources:
@@ -119,9 +124,23 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            # .NET always writes its diagnostic IPC socket and debug pipes into /tmp on
+            # startup, plus any Path.GetTempPath() use.
+            - name: tmp
+              mountPath: /tmp
+            # $HOME of the aspnet image's app user (1654). ASP.NET Core stores its
+            # DataProtection keyring here (~/.aspnet/DataProtection-Keys) and ONNX Runtime
+            # its telemetry/device cache (~/.cache/Microsoft). Both were already ephemeral
+            # (container layer, lost on restart), so an emptyDir changes nothing functionally.
+            - name: home
+              mountPath: /home/app
       volumes:
         - name: data
           persistentVolumeClaim: {claimName: unifiprotectdashboard-data}
+        - name: tmp
+          emptyDir: {sizeLimit: 256Mi}
+        - name: home
+          emptyDir: {sizeLimit: 64Mi}
 ---
 apiVersion: v1
 kind: Service
