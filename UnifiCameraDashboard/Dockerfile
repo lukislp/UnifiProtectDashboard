@@ -12,6 +12,8 @@ RUN mkdir -p nuget-packages && \
     curl -fsSL -o nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
 
 # --locked-mode: the restore must match the committed packages.lock.json exactly.
+# The lock-file properties live in the repo-root Directory.Build.props, which is outside this
+# build context (the project folder); the explicit flags here keep the image build locked too.
 RUN dotnet restore "UnifiCameraDashboard.csproj" --locked-mode
 
 COPY . .
