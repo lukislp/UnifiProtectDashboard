@@ -1,3 +1,11 @@
+## [1.14.19](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.18...v1.14.19) (2026-09-15)
+
+
+### Bug Fixes
+
+* **deps:** Bump coverlet.collector from 6.0.4 to 10.0.1 ([#73](https://github.com/lukislp/UnifiProtectDashboard/issues/73)) ([0bc5f0d](https://github.com/lukislp/UnifiProtectDashboard/commit/0bc5f0d7996f4385e982dd6d6793b330dc86e192))
+* **deps:** Bump the dotnet group with 4 updates ([#71](https://github.com/lukislp/UnifiProtectDashboard/issues/71)) ([8939a55](https://github.com/lukislp/UnifiProtectDashboard/commit/8939a5556598a1bdbe02183a5d3eb65889cdd387))
+
 ## [1.14.18](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.17...v1.14.18) (2026-09-15)
 
 
