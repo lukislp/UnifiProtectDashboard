@@ -16,7 +16,14 @@ Download it from this repo's release assets:
 
 ```powershell
 Invoke-WebRequest -Uri "https://github.com/lukislp/UnifiProtectDashboard/releases/download/models/yolo11n.onnx" -OutFile "Tools\yolo\yolo11n.onnx"
+(Get-FileHash "Tools\yolo\yolo11n.onnx" -Algorithm SHA256).Hash
 ```
+
+The hash must be `E538014522F27BD86CFB35106A87FE55C00CCC17E4556733BC5F7093427389AA`. The `models`
+tag is mutable - a release asset can be replaced in place under the same URL - and ONNX Runtime
+executes the graph the file describes, so the checksum is what makes the download trustworthy.
+The Docker build verifies the same value with `sha256sum -c`; when the model is intentionally
+replaced, update both.
 
 Or export it yourself from [Ultralytics YOLO11](https://docs.ultralytics.com/models/yolo11/):
 
