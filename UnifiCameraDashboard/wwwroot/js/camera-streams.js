@@ -2,8 +2,6 @@
 
 // Initialize camera streams
 window.initializeCameraStreams = function (cameras) {
-    console.log('Initializing camera streams:', cameras);
-
     cameras.forEach(camera => {
         const imgElement = document.getElementById(`camera-${camera.id}`);
         if (imgElement) {
@@ -46,8 +44,6 @@ window.requestWakeLock = async function () {
     if ('wakeLock' in navigator) {
         try {
             wakeLock = await navigator.wakeLock.request('screen');
-            console.log('Wake lock activated - screen stays on');
-
             // Restore wake lock on visibility change
             document.addEventListener('visibilitychange', async () => {
                 if (wakeLock !== null && document.visibilityState === 'visible') {
@@ -68,7 +64,7 @@ window.setupKeepAlive = function () {
     setInterval(() => {
         // Small invisible request to keep connection active
         fetch('/api/ping', { method: 'HEAD' }).catch(() => {
-            console.log('Keep-alive ping failed');
+            console.warn('Keep-alive ping failed');
         });
     }, 60000); // every 60 seconds
 };
@@ -79,7 +75,7 @@ window.setupAutoReconnect = function () {
     const maxReconnectAttempts = 10;
 
     window.addEventListener('offline', () => {
-        console.log('Connection lost - attempting reconnect...');
+        console.warn('Connection lost - attempting reconnect...');
         attemptReconnect();
     });
 
@@ -90,12 +86,10 @@ window.setupAutoReconnect = function () {
         }
 
         reconnectAttempts++;
-        console.log(`Reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts}`);
 
         setTimeout(() => {
             fetch('/api/ping', { method: 'HEAD' })
                 .then(() => {
-                    console.log('Connection restored');
                     reconnectAttempts = 0;
                     location.reload(); // reload page after successful reconnection
                 })
@@ -124,7 +118,6 @@ document.addEventListener('keydown', (e) => {
 
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Unifi Camera Dashboard loaded');
     window.requestWakeLock();
     window.setupKeepAlive();
     window.setupAutoReconnect();
@@ -133,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Visibility Change Handler - re-acquires the wake lock
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-        console.log('Tab visible again - reactivating wake lock');
         window.requestWakeLock();
     }
 });
