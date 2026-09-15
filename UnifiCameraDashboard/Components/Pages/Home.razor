@@ -214,12 +214,9 @@ window.callApi = async function(url, options = {}) {
 // Start HLS stream via API
 window.startHlsStream = async function(cameraId, channel = 1) {
     try {
-        console.log('[HLS] Starting stream for camera:', cameraId);
-        
   const response = await window.callApi(`/api/hls/start/${cameraId}?channel=${channel}`);
         
         if (response.success && response.playlistUrl) {
-            console.log('[HLS] Stream started, playlist:', response.playlistUrl);
      return response.playlistUrl;
         } else {
 console.error('[HLS] Stream start failed:', response);
@@ -234,15 +231,11 @@ console.error('[HLS] Stream start failed:', response);
 // Stop all HLS streams via API
 window.stopAllHlsStreams = async function() {
     try {
-  console.log('[HLS] Stopping all streams...');
-        
         // Stop browser players
         window.stopAllHlsPlayers();
 
         // Stop server-side FFmpeg processes
   await window.callApi('/api/hls/stop-all', { method: 'POST' });
-        
-        console.log('[HLS] All streams stopped');
     } catch(error) {
         console.error('[HLS] Error stopping:', error);
     }
@@ -250,8 +243,6 @@ window.stopAllHlsStreams = async function() {
 
 // Initialize HLS player
 window.initializeHlsPlayer = function(cameraId, playlistUrl) {
-    console.log('[HLS] Initializing player for camera:', cameraId, 'URL:', playlistUrl);
-    
 const video = document.getElementById('video-' + cameraId);
     if (!video) {
     console.error('[HLS] Video element not found:', 'video-' + cameraId);
@@ -311,7 +302,6 @@ const video = document.getElementById('video-' + cameraId);
         hls.attachMedia(video);
 
         hls.on(window.Hls.Events.MANIFEST_PARSED, function() {
-            console.log('[HLS] Manifest loaded, starting playback:', cameraId);
     video.play().catch(e => {
          console.warn('[HLS] Autoplay blocked:', e);
             });
@@ -342,7 +332,6 @@ hls.recoverMediaError();
           
                 // Auto-restart after 5 seconds
         setTimeout(async () => {
-         console.log('[HLS] Attempting stream restart for:', cameraId);
                  try {
 const newUrl = await window.startHlsStream(cameraId, 1);
            if (newUrl) {
@@ -380,7 +369,6 @@ window.stopHlsPlayer = function(cameraId) {
         try {
             window.hlsPlayers[cameraId].destroy();
             delete window.hlsPlayers[cameraId];
-        console.log('[HLS] Player stopped:', cameraId);
         } catch(e) {
             console.error('[HLS] Error stopping:', e);
 }
@@ -392,7 +380,6 @@ window.stopAllHlsPlayers = function() {
     Object.keys(window.hlsPlayers).forEach(cameraId => {
         window.stopHlsPlayer(cameraId);
     });
-    console.log('[HLS] All players stopped');
 };
 
 // Cleanup on page unload
