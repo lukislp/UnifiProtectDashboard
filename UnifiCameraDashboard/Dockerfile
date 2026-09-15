@@ -40,8 +40,16 @@ COPY --from=build /app/publish .
 # ffmpeg treatment above; see Tools/yolo/README.md). Hosted as a GitHub Release asset on this repo
 # under a fixed "models" tag, deliberately not tied to this app's own semantic-release version
 # tags, so the URL never changes across releases.
+# Checksum-verified because that fixed tag is mutable by design: a release asset can be replaced
+# in place under the same URL, and an .onnx file is not inert data - ONNX Runtime executes the
+# graph it describes, so whoever can overwrite the asset decides what runs inside this container.
+# Neither the Trivy scan nor the cosign signature over the image catches that: both only attest
+# whatever bytes this build happened to pull. sha256sum -c fails the build on any byte change;
+# when the model is intentionally replaced, recompute the sum and update it here together with
+# the copy in Tools/yolo/README.md.
 RUN mkdir -p Tools/yolo && \
-    curl -fsSL -o Tools/yolo/yolo11n.onnx https://github.com/lukislp/UnifiProtectDashboard/releases/download/models/yolo11n.onnx
+    curl -fsSL -o Tools/yolo/yolo11n.onnx https://github.com/lukislp/UnifiProtectDashboard/releases/download/models/yolo11n.onnx && \
+    echo "e538014522f27bd86cfb35106a87fe55c00ccc17e4556733bc5f7093427389aa  Tools/yolo/yolo11n.onnx" | sha256sum -c -
 
 # Data directory for the SQLite database
 ENV DATA_DIR=/data
