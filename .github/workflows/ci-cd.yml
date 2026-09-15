@@ -72,7 +72,7 @@ jobs:
             nuget-${{ runner.os }}-
       - run: dotnet restore UnifiCameraDashboard.sln --locked-mode
       - name: Known-vulnerable NuGet packages (High/Critical fail the build)
-        uses: lukislp/ci-workflows/.github/actions/nuget-severity-gate@f3d5b5b26069f5678e813b2bc7440cb441aa28d0 # v1.1.0
+        uses: lukislp/ci-workflows/.github/actions/nuget-severity-gate@c1dd49d3d005e8912ab3420d5fdd7f3d9ee16adf # v1.2.2
         with:
           solution: UnifiCameraDashboard.sln
 
