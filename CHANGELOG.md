@@ -1,3 +1,11 @@
+## [1.14.20](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.19...v1.14.20) (2026-09-15)
+
+
+### Bug Fixes
+
+* **dashboard:** drop debug console output from the browser console ([#78](https://github.com/lukislp/UnifiProtectDashboard/issues/78)) ([9e86670](https://github.com/lukislp/UnifiProtectDashboard/commit/9e86670d0a1f22d8feb4d8c45183562762eb0911))
+* **deps:** Bump xunit.runner.visualstudio from 3.1.4 to 4.0.0 ([#76](https://github.com/lukislp/UnifiProtectDashboard/issues/76)) ([e058eb9](https://github.com/lukislp/UnifiProtectDashboard/commit/e058eb9f7dbc5512ac76ee532eb4e484b00b2bdb))
+
 ## [1.14.19](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.18...v1.14.19) (2026-09-15)
 
 
