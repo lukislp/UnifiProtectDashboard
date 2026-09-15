@@ -1,3 +1,11 @@
+## [1.14.16](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.15...v1.14.16) (2026-09-15)
+
+
+### Bug Fixes
+
+* **ci:** bump lukislp/ci-workflows/.github/actions/nuget-severity-gate ([a78509d](https://github.com/lukislp/UnifiProtectDashboard/commit/a78509dc7ad92723750d0783b160259a6c6a8534))
+* **ci:** bump lukislp/ci-workflows/.github/workflows/dependabot-auto-merge.yml ([0cfdaad](https://github.com/lukislp/UnifiProtectDashboard/commit/0cfdaad2fd68829a15a009c7f3503e92c2e08679))
+
 ## [1.14.15](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.14...v1.14.15) (2026-09-15)
 
 
