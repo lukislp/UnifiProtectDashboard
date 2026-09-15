@@ -1,3 +1,10 @@
+## [1.14.17](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.16...v1.14.17) (2026-09-15)
+
+
+### Bug Fixes
+
+* **ci:** bump lukislp/ci-workflows/.github/actions/deploy-key-push ([a7465fd](https://github.com/lukislp/UnifiProtectDashboard/commit/a7465fd9b0589e5d4900244d5b318a4ea3126736))
+
 ## [1.14.16](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.15...v1.14.16) (2026-09-15)
 
 
