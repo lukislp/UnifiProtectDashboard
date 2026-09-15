@@ -6,12 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
     <!-- Resolved from the committed flat-folder feed in nuget-packages/, not nuget.org. -->
     <PackageReference Include="NotifyHub" Version="0.2.8" />
     <!-- Implicit SDK package pinned explicitly so the lock stays valid across SDK patches. -->
