@@ -1,3 +1,10 @@
+## [1.14.15](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.14...v1.14.15) (2026-09-15)
+
+
+### Bug Fixes
+
+* **build:** commit the NotifyHub package so restore works from a bare checkout ([#67](https://github.com/lukislp/UnifiProtectDashboard/issues/67)) ([3c29c7b](https://github.com/lukislp/UnifiProtectDashboard/commit/3c29c7b8433bcad8e2c33059d3385cd8ed11c533))
+
 ## [1.14.14](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.13...v1.14.14) (2026-09-15)
 
 
