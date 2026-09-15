@@ -1,3 +1,10 @@
+## [1.14.14](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.13...v1.14.14) (2026-09-15)
+
+
+### Bug Fixes
+
+* **docker:** verify the YOLO model checksum at build time ([#66](https://github.com/lukislp/UnifiProtectDashboard/issues/66)) ([6d6e490](https://github.com/lukislp/UnifiProtectDashboard/commit/6d6e490b4b225c47fd4418e909f0ca341e0639db))
+
 ## [1.14.13](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.12...v1.14.13) (2026-09-13)
 
 
