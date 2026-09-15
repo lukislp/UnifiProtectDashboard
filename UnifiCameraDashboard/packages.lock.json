@@ -48,9 +48,9 @@
       },
       "NotifyHub": {
         "type": "Direct",
-        "requested": "[0.2.2, )",
-        "resolved": "0.2.2",
-        "contentHash": "fnST6zjIfy6x5xualXw1bkBO+rOE5fwUPS64BcjHsXPew2EqETunEIanh6Fh3bsQAJTjFiXNUE7tttQb4EbMSg==",
+        "requested": "[0.2.8, )",
+        "resolved": "0.2.8",
+        "contentHash": "fMaMVPtEY02MoGYRDLuVeDxCTgFKa4xBuE4MrXnTYwL9zvTCsu9zR+v//8dHmTI1qR/e9WG0NiGszVVXGBed3Q==",
         "dependencies": {
           "MailKit": "4.17.0"
         }

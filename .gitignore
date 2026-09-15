@@ -215,10 +215,11 @@ secrets.json
 **/Tools/yolo/*.onnx
 !**/Tools/yolo/README.md
 
-# NotifyHub nupkg (separate repo, not on nuget.org - download from its GitHub Release, see
-# UnifiCameraDashboard/nuget-packages/README.md)
-**/nuget-packages/*.nupkg
-!**/nuget-packages/README.md
+# NotifyHub nupkg: committed on purpose, unlike every other *.nupkg (ignored above as build
+# output). NotifyHub isn't on nuget.org, so this flat-folder feed is the only way the package
+# resolves - and a restore that needs a download step first is a restore Dependabot cannot run.
+# See UnifiCameraDashboard/nuget-packages/README.md.
+!**/nuget-packages/*.nupkg
 
 # Local deployment scripts (may contain credentials)
 deploy-local.ps1
