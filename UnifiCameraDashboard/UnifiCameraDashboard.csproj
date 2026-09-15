@@ -12,7 +12,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
-    <PackageReference Include="NotifyHub" Version="0.2.2" />
+    <!-- Resolved from the committed flat-folder feed in nuget-packages/, not nuget.org. -->
+    <PackageReference Include="NotifyHub" Version="0.2.8" />
     <!-- Implicit SDK package pinned explicitly so the lock stays valid across SDK patches. -->
     <PackageReference Include="Microsoft.AspNetCore.App.Internal.Assets" Version="10.0.12" />
     <PackageReference Include="SkiaSharp" Version="4.151.1" />

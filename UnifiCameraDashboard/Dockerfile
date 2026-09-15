@@ -3,13 +3,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:2fa828c68761b1b8c23d7662dc134421b9
 WORKDIR /src
 
 COPY ["UnifiCameraDashboard.csproj", "packages.lock.json", "nuget.config", "./"]
-
-# NotifyHub (github.com/lukislp/NotifyHub) isn't published to nuget.org - its GitHub Releases
-# attach real versioned nupkgs instead. Downloaded into the local feed nuget.config points at,
-# before restore needs it - same not-committed-to-git treatment as the YOLO model below, just
-# earlier in the build since this one is a compile-time dependency.
-RUN mkdir -p nuget-packages && \
-    curl -fsSL -o nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
+# NotifyHub (github.com/lukislp/NotifyHub) isn't published to nuget.org, so it comes from the
+# committed flat-folder feed nuget.config points at - no download step before restore.
+COPY ["nuget-packages/", "nuget-packages/"]
 
 # --locked-mode: the restore must match the committed packages.lock.json exactly.
 # The lock-file properties live in the repo-root Directory.Build.props, which is outside this

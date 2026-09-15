@@ -36,10 +36,6 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
           restore-keys: |
             nuget-${{ runner.os }}-
-      - name: Download NotifyHub nupkg (not on nuget.org - see UnifiCameraDashboard/nuget-packages/README.md)
-        run: |
-          mkdir -p UnifiCameraDashboard/nuget-packages
-          curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
       - run: dotnet restore UnifiCameraDashboard.sln --locked-mode
       - run: dotnet build UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-restore
       - run: dotnet test UnifiCameraDashboard.sln --configuration ${{ env.CONFIGURATION }} --no-build
@@ -58,10 +54,6 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
           restore-keys: |
             nuget-${{ runner.os }}-
-      - name: Download NotifyHub nupkg (not on nuget.org - see UnifiCameraDashboard/nuget-packages/README.md)
-        run: |
-          mkdir -p UnifiCameraDashboard/nuget-packages
-          curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
       - run: dotnet format UnifiCameraDashboard.sln --verify-no-changes --verbosity diagnostic
 
   test-security:
@@ -78,10 +70,6 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'UnifiCameraDashboard.sln') }}
           restore-keys: |
             nuget-${{ runner.os }}-
-      - name: Download NotifyHub nupkg (not on nuget.org - see UnifiCameraDashboard/nuget-packages/README.md)
-        run: |
-          mkdir -p UnifiCameraDashboard/nuget-packages
-          curl -fsSL -o UnifiCameraDashboard/nuget-packages/NotifyHub.0.2.2.nupkg https://github.com/lukislp/NotifyHub/releases/download/v0.2.2/NotifyHub.0.2.2.nupkg
       - run: dotnet restore UnifiCameraDashboard.sln --locked-mode
       - name: Known-vulnerable NuGet packages (High/Critical fail the build)
         uses: lukislp/ci-workflows/.github/actions/nuget-severity-gate@f3d5b5b26069f5678e813b2bc7440cb441aa28d0 # v1.1.0
