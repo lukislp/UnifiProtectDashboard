@@ -15,6 +15,13 @@ updates:
     groups:
       dotnet:
         patterns: ["Microsoft.*", "System.*", "Npgsql.*"]
+    ignore:
+      # NotifyHub comes from the committed flat-folder feed in
+      # UnifiCameraDashboard/nuget-packages, not from a public registry - Dependabot cannot see
+      # its GitHub Releases, so it is bumped by hand (see that folder's README). Ignoring it also
+      # closes a dependency-confusion path: the id is unregistered on nuget.org, so anything that
+      # ever shows up there under this name would be a stranger's package, not an upgrade.
+      - dependency-name: "NotifyHub"
     commit-message:
       prefix: "fix(deps)"
   - package-ecosystem: docker
