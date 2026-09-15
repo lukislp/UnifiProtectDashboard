@@ -17,7 +17,7 @@
     <!-- Implicit SDK package pinned explicitly so the lock stays valid across SDK patches. -->
     <PackageReference Include="Microsoft.AspNetCore.App.Internal.Assets" Version="10.0.12" />
     <PackageReference Include="SkiaSharp" Version="4.151.1" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.152.0" />
     <!-- Pinned above the transitive default to fix CVE-2025-6965 (SQLite memory corruption, GHSA-2m69-gcr7-jv3q) -->
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
   </ItemGroup>

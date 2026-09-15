@@ -84,7 +84,7 @@ spec:
         - name: unifiprotectdashboard
           # Flux-managed (see k8s/flux-deploy/) - the tag is written by the deploy-bump job of
           # the release pipeline and applied by Flux.
-          image: ghcr.io/lukislp/unifiprotectdashboard:1.14.16 # set by the deploy-bump job (CI) on every release
+          image: ghcr.io/lukislp/unifiprotectdashboard:1.14.17 # set by the deploy-bump job (CI) on every release
           env:
             - name: DATA_DIR
               value: /data
