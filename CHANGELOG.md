@@ -1,3 +1,11 @@
+## [1.14.18](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.17...v1.14.18) (2026-09-15)
+
+
+### Bug Fixes
+
+* **deps:** Bump SkiaSharp from 4.151.1 to 4.152.0 ([2f64e94](https://github.com/lukislp/UnifiProtectDashboard/commit/2f64e9448ed9d35bb5b73c9a12b77e06d075c3ee))
+* **deps:** Bump SkiaSharp.NativeAssets.Linux from 4.151.1 to 4.152.0 ([6a64fe3](https://github.com/lukislp/UnifiProtectDashboard/commit/6a64fe38539d1e9146d8dfdd131565e4ecf1cbf8))
+
 ## [1.14.17](https://github.com/lukislp/UnifiProtectDashboard/compare/v1.14.16...v1.14.17) (2026-09-15)
 
 
