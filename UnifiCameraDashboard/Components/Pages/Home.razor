@@ -6,6 +6,7 @@
 @inject IUnifiCameraService CameraService
 @inject ICameraRepository CameraRepository
 @inject IJSRuntime JS
+@inject ILogger<Home> Logger
 
 <PageTitle>Unifi Camera Dashboard</PageTitle>
 
@@ -569,16 +570,16 @@ await StartHlsStreamsForAllCameras();
          {
           // Initialize HLS player in browser
          await JS.InvokeVoidAsync("initializeHlsPlayer", cameraId, playlistUrl);
-       Console.WriteLine($"HLS stream started for camera: {cameraId}");
+       Logger.LogDebug("HLS stream started for camera {CameraId}", LogRedaction.ForLog(cameraId));
             }
   else
             {
-    Console.WriteLine($"HLS stream could not be started for camera: {cameraId}");
+    Logger.LogWarning("HLS stream could not be started for camera {CameraId}", LogRedaction.ForLog(cameraId));
  }
         }
         catch (Exception ex)
         {
-         Console.WriteLine($"Error starting HLS stream for {cameraId}: {ex.Message}");
+         Logger.LogError(ex, "Error starting HLS stream for camera {CameraId}", LogRedaction.ForLog(cameraId));
         }
     }
 
@@ -590,11 +591,11 @@ await StartHlsStreamsForAllCameras();
     await JS.InvokeVoidAsync("stopAllHlsStreams");
 
             _hlsStreamsStarted.Clear();
-   Console.WriteLine("All HLS streams stopped");
+   Logger.LogDebug("All HLS streams stopped");
         }
      catch (Exception ex)
    {
-            Console.WriteLine($"Error stopping HLS streams: {ex.Message}");
+            Logger.LogError(ex, "Error stopping HLS streams");
      }
     }
 
@@ -616,7 +617,7 @@ await StartHlsStreamsForAllCameras();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error removing camera {camera.Id}: {ex.Message}");
+            Logger.LogError(ex, "Error removing camera {CameraId}", LogRedaction.ForLog(camera.Id));
         }
         finally
         {
@@ -651,7 +652,7 @@ await StartHlsStreamsForAllCameras();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading cameras: {ex.Message}");
+            Logger.LogError(ex, "Error loading cameras");
         }
         finally
    {
@@ -772,7 +773,8 @@ StateHasChanged();
         }
         catch (Exception ex)
         {
-Console.WriteLine($"Wake lock could not be activated: {ex.Message}");
+// Not every browser exposes the Wake Lock API, so a failure here is expected rather than fatal.
+Logger.LogWarning(ex, "Wake lock could not be activated");
      }
     }
 
@@ -793,14 +795,14 @@ Console.WriteLine($"Wake lock could not be activated: {ex.Message}");
           
         if (!isActive && _hlsStreamsStarted.ContainsKey(camera.Id))
    {
-   Console.WriteLine($"[Watchdog] Stream for {camera.Id} is dead, restarting...");
+   Logger.LogWarning("Watchdog: stream for camera {CameraId} is dead, restarting", LogRedaction.ForLog(camera.Id));
     _hlsStreamsStarted.Remove(camera.Id);
   await StartHlsStream(camera.Id);
     }
           }
      catch (Exception ex)
      {
-    Console.WriteLine($"[Watchdog] Error for {camera.Id}: {ex.Message}");
+    Logger.LogError(ex, "Watchdog error for camera {CameraId}", LogRedaction.ForLog(camera.Id));
            }
       }
      });
