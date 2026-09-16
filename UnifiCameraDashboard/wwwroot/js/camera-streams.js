@@ -15,14 +15,6 @@ window.toggleFullscreen = async function () {
     }
 };
 
-// Show single camera in fullscreen
-window.showCameraFullscreen = function (cameraId) {
-    const imgElement = document.getElementById(`camera-${cameraId}`);
-    if (imgElement && imgElement.requestFullscreen) {
-        imgElement.requestFullscreen();
-    }
-};
-
 // Wake Lock API - prevents tablet from going to standby
 let wakeLock = null;
 
