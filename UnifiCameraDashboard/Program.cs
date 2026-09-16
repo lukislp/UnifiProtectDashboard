@@ -96,7 +96,10 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await dbContext.MigrateSafelyAsync();
-        logger.LogInformation("Database initialized: {DbPath}", dbPath);
+        logger.LogInformation("Database initialized");
+        // The database path exposes the host's directory layout, so keep it out of the
+        // default log level and only surface it when debug logging is switched on.
+        logger.LogDebug("Database file: {DbPath}", dbPath);
     }
     catch (Exception ex)
     {
@@ -152,24 +155,23 @@ app.MapRazorComponents<App>()
 using (var scope = app.Services.CreateScope())
 {
     var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+    var setupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var isSetupComplete = await settingsService.IsInitialSetupCompleteAsync();
 
     if (!isSetupComplete)
     {
-        Console.WriteLine("\nINITIAL SETUP REQUIRED");
-        Console.WriteLine($"   Open: http://localhost:{builder.Configuration.GetValue<int>("ServerSettings:HttpPort", 5003)}/setup");
-        Console.WriteLine();
+        setupLogger.LogWarning("Initial setup required - open the /setup page to configure the dashboard");
     }
     else
     {
-        Console.WriteLine("\nDashboard configured");
+        setupLogger.LogInformation("Dashboard configured");
     }
 }
 
 var displayPort = builder.Configuration.GetValue<int>("ServerSettings:HttpPort", 5003);
-Console.WriteLine($"Dashboard started:");
-Console.WriteLine($"   HTTP:  http://localhost:{displayPort}");
-Console.WriteLine($"   Database: {dbPath}");
-Console.WriteLine();
+var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+startupLogger.LogInformation("Dashboard started");
+// The listening port describes where the deployment is reachable, so it stays at debug level.
+startupLogger.LogDebug("Listening for HTTP on port {HttpPort}", displayPort);
 
 app.Run();
