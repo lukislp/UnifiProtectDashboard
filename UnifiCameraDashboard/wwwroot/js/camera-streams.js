@@ -1,19 +1,5 @@
 // Unifi Camera Dashboard JavaScript
 
-// Initialize camera streams
-window.initializeCameraStreams = function (cameras) {
-    cameras.forEach(camera => {
-        const imgElement = document.getElementById(`camera-${camera.id}`);
-        if (imgElement) {
-            // Auto-refresh snapshot every 5 seconds
-            setInterval(() => {
-                const timestamp = new Date().getTime();
-                imgElement.src = `${camera.snapshotUrl}?t=${timestamp}`;
-            }, 5000);
-        }
-    });
-};
-
 // Fullscreen handling
 window.toggleFullscreen = async function () {
     if (!document.fullscreenElement) {
