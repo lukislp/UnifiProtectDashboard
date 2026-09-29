@@ -350,8 +350,8 @@
       },
       "SkiaSharp.NativeAssets.Linux": {
         "type": "Transitive",
-        "resolved": "4.152.1",
-        "contentHash": "1bB3eedb+4ZcyWigUzxXCE7LrNOlmyAs1crGCnX8UEHKl0nHOmzDt3E0d53IIgiguS88RKeCPy1ArDXK5FoDCw=="
+        "resolved": "4.153.0",
+        "contentHash": "HpWn0Hk2WnQhc885Ac0feSKe9I7iVrXAkVRGMcwKkOjrmvV4pycrq+xRz1JrU0V54YCKZgO99kXt5r+/UkI1uA=="
       },
       "SkiaSharp.NativeAssets.macOS": {
         "type": "Transitive",
@@ -457,7 +457,7 @@
           "NotifyHub": "[0.2.8, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[3.0.5, )",
           "SkiaSharp": "[4.153.0, )",
-          "SkiaSharp.NativeAssets.Linux": "[4.152.1, )"
+          "SkiaSharp.NativeAssets.Linux": "[4.153.0, )"
         }
       }
     }
