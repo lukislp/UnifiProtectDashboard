@@ -67,19 +67,15 @@ spec:
       # Pinned to the real 8GB node this measurement is about - not left to the scheduler.
       nodeSelector:
         kubernetes.io/hostname: pinode02
-      initContainers:
-        # The PVC's data (SQLite db, encryption key, thumbnails) was written
-        # by the image's root era; chown on every start - idempotent - so the
-        # non-root app below can keep writing it. The only root in the pod.
-        - name: fix-data-ownership
-          image: busybox:1.38.0
-          command: ["chown", "-R", "1654:1654", "/data"]
-          securityContext:
-            runAsUser: 0
-            readOnlyRootFilesystem: true
-          volumeMounts:
-            - name: data
-              mountPath: /data
+      # fsGroup replaces the former root chown init container (busybox, runAsUser 0): the
+      # kubelet now hands the /data volume to gid 1654 itself. OnRootMismatch only walks the
+      # tree when the mount point's ownership is wrong, so on the existing volume (already
+      # 1654-owned by the old init container) it is a no-op, and a fresh volume is fixed up
+      # once on first mount. With no root process left, the namespace can enforce the
+      # Pod Security `restricted` level (k8s/00-namespace.yaml).
+      securityContext:
+        fsGroup: 1654
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: unifiprotectdashboard
           # Flux-managed (see k8s/flux-deploy/) - the tag is written by the deploy-bump job of

@@ -9,7 +9,10 @@ kind: Namespace
 metadata:
   name: unifiprotectdashboard
   labels:
-    pod-security.kubernetes.io/enforce: baseline
+    # restricted is enforceable since the Deployment dropped its root chown init container
+    # in favour of fsGroup (see k8s/01-app.yaml) - the app container already met the
+    # profile. This file is not Flux-managed: re-apply by hand after changing it.
+    pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/warn: restricted
     pod-security.kubernetes.io/audit: restricted
 ---
