@@ -67,9 +67,9 @@
       },
       "SkiaSharp.NativeAssets.Linux": {
         "type": "Direct",
-        "requested": "[4.153.0, )",
-        "resolved": "4.153.0",
-        "contentHash": "HpWn0Hk2WnQhc885Ac0feSKe9I7iVrXAkVRGMcwKkOjrmvV4pycrq+xRz1JrU0V54YCKZgO99kXt5r+/UkI1uA=="
+        "requested": "[4.153.1, )",
+        "resolved": "4.153.1",
+        "contentHash": "DlBk91MARPfARK5kqd1K6+u6UuUQx+8Rsc+Pwi2dVO7X+S3LsLwqJq1gULLdpIgW2zmcqZ87O6TMfdWkwBXfkQ=="
       },
       "SQLitePCLRaw.bundle_e_sqlite3": {
         "type": "Direct",
