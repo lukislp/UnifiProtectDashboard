@@ -16,6 +16,10 @@ updates:
       ci-workflows:
         patterns:
           - "lukislp/ci-workflows*"
+      # init, analyze and upload-sarif must run the same version - one PR for all.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
   - package-ecosystem: nuget
     directory: /
     schedule:
@@ -24,6 +28,9 @@ updates:
     groups:
       dotnet:
         patterns: ["Microsoft.*", "System.*", "Npgsql.*"]
+      # SkiaSharp only loads its matching native assets - bump them together.
+      skiasharp:
+        patterns: ["SkiaSharp*", "HarfBuzzSharp*"]
     ignore:
       # NotifyHub comes from the committed flat-folder feed in
       # UnifiCameraDashboard/nuget-packages, not from a public registry - Dependabot cannot see
