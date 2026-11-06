@@ -4,7 +4,7 @@ Manifests for running the app on the real 8GB Pi cluster node (`pinode02`), to m
 classification ms/image, RAM, and filter rate under real load (see the S2 plan / PR #5).
 
 `01-app.yaml` (PVC + Deployment + Service) is **Flux-managed**: the release pipeline's
-`deploy-bump` job writes every released version into its image line (over the semantic-release
+`deploy-bump` job writes every released version into its image line (over a
 deploy key, so nothing in the cluster holds a write token for this repo) and Flux
 (`k8s/flux/01-git-source.yaml`, read-only) applies `k8s/flux-deploy/kustomization.yaml`, same
 pattern as `studylife-mcp`/`piwatch`. `00-namespace.yaml`, `02-httproute.yaml`, and `03-network-policies.yaml`
