@@ -21,7 +21,7 @@ COPY . .
 RUN dotnet publish "UnifiCameraDashboard.csproj" -c Release -o /app/publish -p:RestoreLockedMode=true
 
 # ---- Runtime Stage ----
-FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:bfd912c83295ce66d4b706ebb8541b9f14259b0e76fbb88b2751f58ce2399d2e AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:12b1135f5f8b3c0a214f2a680ff2033dff4f684f445d6c697d9524ceeb303586 AS final
 WORKDIR /app
 
 # Install FFmpeg via apt (replaces the bundled Windows binaries)
